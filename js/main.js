@@ -1,61 +1,97 @@
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+import * as THREE from 'three';
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize( window.innerWidth, window.innerHeight );
-renderer.setClearColor (0000000, 1);
-document.body.appendChild( renderer.domElement );
+import { OrbitControls } from 'three/addons/OrbitControls.js';
+import { FBXLoader } from 'three/addons/FBXLoader.js';
 
-const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-const material = new THREE.MeshPhongMaterial( { color: 0xffffff, vertexColors: true} );
+let camera, scene, renderer;
 
-//
-const colors = [];
-
-const color = new THREE.Color();
-for (let i = 0; i < 6; i++) { // for faces
-  color.set( Math.random() * 0xffffff );
-  for (let j = 0; j < 4; j++) { // for vertices
-    colors.push(color.r, color.g, color.b);
-  }
-}
-geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3) ); 
-const geometry2 = geometry.clone();
-const geometry3 = geometry.clone();
-//
-
-const cube = new THREE.Mesh( geometry, material );
-
-scene.add( cube );
-
-const cube2 = new THREE.Mesh( geometry2, material );
-cube2.position.x = 3;
-
-scene.add( cube2 );
-
-const cube3 = new THREE.Mesh( geometry3, material );
-cube3.position.x = -3;
-
-scene.add( cube3 );
-
-camera.position.z = 5;
-
-var light = new THREE.PointLight(0xffffff);
-light.position.set(0,250,0);
-scene.add(light);
-
-var ambientLight = new THREE.AmbientLight(0x111111);
-scene.add(ambientLight);
-
-function animate() { // loop every time the screen is refreshed/ 60 fps
-  requestAnimationFrame( animate ); // requestAnimationFrame advantages bland annat: pauses when the user navigates to another browser tab
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
-
-  cube2.rotation.x += 0.01;
-
-  cube3.rotation.z += 0.01;
-  renderer.render( scene, camera );
-};
-
+init();
 animate();
+
+function init() {
+  const container = document.createElement( 'div' );
+  document.body.appendChild( container );
+  
+  camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+  camera.position.set( 100, 200, 300 );
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0xa0a0a0 );
+  scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+  const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+  hemiLight.position.set( 0, 200, 0 );
+  scene.add( hemiLight );
+
+  const dirLight = new THREE.DirectionalLight( 0xffffff );
+  dirLight.position.set( 0, 200, 100 );
+  dirLight.castShadow = true;
+  dirLight.shadow.camera.top = 180;
+  dirLight.shadow.camera.bottom = - 100;
+  dirLight.shadow.camera.left = - 120;
+  dirLight.shadow.camera.right = 120;
+  scene.add( dirLight );
+
+  // scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+
+  // ground
+  const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+  mesh.rotation.x = - Math.PI / 2;
+  mesh.receiveShadow = true;
+  scene.add( mesh );
+
+  const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+  grid.material.opacity = 0.2;
+  grid.material.transparent = true;
+  scene.add( grid );
+
+  // model
+  const loader = new FBXLoader();
+  loader.load( 'models/fbx/twist.fbx', function ( object ) {
+
+    object.traverse( function ( child ) {
+
+      if ( child.isMesh ) {
+
+        child.castShadow = true;
+        child.receiveShadow = true;
+
+      }
+
+    } );
+
+    scene.add( object );
+
+  } );
+
+  renderer = new THREE.WebGLRenderer( { antialias: true } );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.shadowMap.enabled = true;
+  container.appendChild( renderer.domElement );
+
+  const controls = new OrbitControls( camera, renderer.domElement );
+  controls.target.set( 0, 100, 0 );
+  controls.update();
+
+  window.addEventListener( 'resize', onWindowResize );
+
+}
+
+function onWindowResize() {
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+}
+
+//
+
+function animate() {
+
+  requestAnimationFrame( animate );
+
+  renderer.render( scene, camera );
+}

@@ -2,13 +2,21 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-		<title>My first three.js app</title>
+		<title>Twisted</title>
 		<style>
 			body { margin: 0; }
-		</style>  
-    <script  src="js/main.js" defer></script>
-    <script  src="js/three.js"></script>
+		</style> 
+
 	</head>
 	<body>
+    <script type="importmap">
+			{
+				"imports": {
+					"three": "./js/three.module.js",
+					"three/addons/": "./js/"
+				}
+			}
+    </script>
+    <script src="js/main.js" type="module"></script>
 	</body>
 </html>
