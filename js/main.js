@@ -1,24 +1,14 @@
-import * as THREE from 'three';
-
-import { OrbitControls } from 'three/addons/OrbitControls.js';
-let controls;
-
-
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio( window.devicePixelRatio );
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
-renderer.setClearColor (0x00000, 1);
+renderer.setClearColor (0000000, 1);
 document.body.appendChild( renderer.domElement );
 
-controls = new OrbitControls( camera, renderer.domElement );
-controls.listenToKeyEvents( window ); // optional
-
 const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+const material = new THREE.MeshPhongMaterial( { color: 0xffffff, vertexColors: true} );
 
-const material = new THREE.MeshPhongMaterial( { color: 0xffffff, envMap: textureCube } );
 //
 const colors = [];
 
@@ -58,14 +48,14 @@ var ambientLight = new THREE.AmbientLight(0x111111);
 scene.add(ambientLight);
 
 function animate() { // loop every time the screen is refreshed/ 60 fps
-requestAnimationFrame( animate ); // requestAnimationFrame advantages bland annat: pauses when the user navigates to another browser tab
-cube.rotation.x += 0.01;
-cube.rotation.y += 0.01;
-cube2.rotation.x += 0.01;
+  requestAnimationFrame( animate ); // requestAnimationFrame advantages bland annat: pauses when the user navigates to another browser tab
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
 
-cube3.rotation.z += 0.01;
-controls.update();
-renderer.render( scene, camera );
+  cube2.rotation.x += 0.01;
+
+  cube3.rotation.z += 0.01;
+  renderer.render( scene, camera );
 };
 
 animate();
