@@ -47,7 +47,7 @@ function init() {
 
   // model
   const loader = new FBXLoader();
-  loader.load( 'models/fbx/twist.fbx', function ( object ) {
+  loader.load( 'models/fbx/scene.fbx', function ( object ) {
 
     object.traverse( function ( child ) {
 
