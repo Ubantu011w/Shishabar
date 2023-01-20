@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import { FBXLoader } from 'three/addons/FBXLoader.js';
 
-let camera, scene, renderer;
+let camera, scene, renderer, mixer;
+const clock = new THREE.Clock();
 
 init();
 animate();
@@ -49,6 +50,11 @@ function init() {
   const loader = new FBXLoader();
   loader.load( 'models/fbx/scene.fbx', function ( object ) {
 
+    mixer = new THREE.AnimationMixer( object );
+
+    const action = mixer.clipAction( object.animations[ 0 ] );
+    action.play();
+
     object.traverse( function ( child ) {
 
       if ( child.isMesh ) {
@@ -90,8 +96,11 @@ function onWindowResize() {
 //
 
 function animate() {
-
   requestAnimationFrame( animate );
+
+  const delta = clock.getDelta();
+
+  if ( mixer ) mixer.update( delta );
 
   renderer.render( scene, camera );
 }
