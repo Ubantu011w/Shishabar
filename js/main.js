@@ -31,6 +31,7 @@ function init() {
   loader.load( 'models/fbx/scene.fbx', function ( object ) {
 
     mixer = new THREE.AnimationMixer( object );
+    const textureLoader = new THREE.TextureLoader();
 
     const action = mixer.clipAction( object.animations[ 0 ] );
     action.play();
@@ -38,7 +39,12 @@ function init() {
     object.traverse( function ( child ) {
 
       if ( child.isMesh ) {
-
+        if (child.name == "Plane009") {
+          const material = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' )});
+          child.material = material;
+        }
 /*         child.castShadow = true;
         child.receiveShadow = true; */
 
