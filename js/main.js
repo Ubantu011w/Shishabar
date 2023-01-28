@@ -42,7 +42,7 @@ function init() {
         if (child.name == "Plane009") {
           const material = new THREE.MeshPhongMaterial({
                 color: 0xffffff,
-                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' )});
+                map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/Plane009DiffuseMap.jpg' )});
           child.material = material;
         }
 /*         child.castShadow = true;
