@@ -45,6 +45,40 @@ function init() {
                 map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/Plane009DiffuseMap.jpg' )});
           child.material = material;
         }
+
+        let material = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1});
+        if (child.name == "ledRed")
+          child.material = material;
+        else if (child.name == "ledBlue") {
+          material = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 1});
+          child.material = material;
+        }
+
+        else if (child.name == "bar") {
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/barDiffuseMap.jpg' )});
+            child.material = material;
+        }
+        else if (child.name == "roofShelters") {
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/roofSheltersDiffuseMap.jpg' )});
+            child.material = material;
+        }
+        else if (child.name == "sofa") {
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/sofaDiffuseMap.jpg' )});
+            child.material = material;
+        }
+        else if (child.name == "StreetSign") {
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/StreetSignDiffuseMap.jpg' )});
+            child.material = material;
+        }
+
 /*         child.castShadow = true;
         child.receiveShadow = true; */
 
