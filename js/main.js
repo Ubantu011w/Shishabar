@@ -14,17 +14,13 @@ function init() {
   document.body.appendChild( container );
   
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-  camera.position.set( 100, 200, 300 );
+  camera.position.set( 100, 100, 300 );
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000000 );
-/*   scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 ); */
-
   const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
   hemiLight.position.set( 0, 200, 0 );
   scene.add( hemiLight );
-
-  // scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
 
   // model
   const loader = new FBXLoader();
@@ -79,6 +75,27 @@ function init() {
             child.material = material;
         }
 
+        else if (child.name == "Sphere010" || child.name == "Sphere012" || child.name == "Sphere014" || child.name.includes("Bulb"))  {
+          material = new THREE.MeshPhongMaterial({emissive: 0xffffff, emissiveIntensity: 1});
+          child.material = material;
+        }
+
+        else if (child.name.includes("sign_")) {
+          material = new THREE.MeshPhongMaterial({ color: 0x000000});
+          child.material = material;
+        }
+
+        else if (child.name == "textProjects" || child.name == "textAbout" || child.name == "textCredits") {
+          material = new THREE.MeshPhongMaterial({ color: 0x00ffff});
+          child.material = material;
+        }
+
+        else if (child.name == "text") {
+          material = new THREE.MeshPhongMaterial({ color: 0xff0000});
+          child.material = material;
+        }
+
+
 /*         child.castShadow = true;
         child.receiveShadow = true; */
 
@@ -93,13 +110,10 @@ function init() {
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
-  renderer.shadowMap.enabled = true;
   container.appendChild( renderer.domElement );
 
   const controls = new OrbitControls( camera, renderer.domElement );
-  controls.target.set( 0, 100, 0 );
   controls.update();
-
   window.addEventListener( 'resize', onWindowResize );
 
 }
