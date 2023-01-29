@@ -54,11 +54,11 @@ function init() {
           child.material = material;
         }
 
-        let material = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1});
+        let material = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
         if (child.name == "ledRed")
           child.material = material;
         else if (child.name == "ledBlue") {
-          material = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 1});
+          material = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 2});
           child.material = material;
         }
 
@@ -120,8 +120,23 @@ function init() {
           video.play();
           child.material = material;
         }
+
+
+        else if (child.name == "textShishaLight" ||  child.name == "textLight1")  {
+          material = new THREE.MeshPhongMaterial({emissive: 0x00FFD8, emissiveIntensity: 2});
+          child.material = material;
+        } 
+    
+        else if (child.name == "aquiriumGlass") {
+          material = new THREE.MeshPhysicalMaterial({ // material for water balloon
+            roughness: 0.110,
+            clearcoat: 1,
+            transmission: 1,
+          })
+          child.material = material;
       }
-    } );
+    
+  }});
 
     scene.add( object );
   } );
