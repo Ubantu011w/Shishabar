@@ -1,16 +1,17 @@
 import * as THREE from 'three';
 
-import { OrbitControls } from 'three/addons/OrbitControls.js';
-import { FBXLoader } from 'three/addons/FBXLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+
+import { gsap } from 'gsap';
+import { Tween } from 'gsap/gsap-core';
 
 let camera, scene, renderer, mixer;
-let pointer, raycaster
+let pointer, raycaster;
 const clock = new THREE.Clock();
 
-let moving = false;
-let zFinal, yFinal, xFinal, z;
-
 const objects = [];
+let tween, controls;
 
 init();
 animate();
@@ -20,8 +21,7 @@ function init() {
   document.body.appendChild( container );
   
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-  camera.position.set( 100, 100, 300 );
-
+  camera.position.set( 182, 171, -457 );
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000000 );
   const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -39,8 +39,8 @@ function init() {
   loader.load( 'models/fbx/scene.fbx', function ( object ) {
 
     mixer = new THREE.AnimationMixer( object );
+    
     const textureLoader = new THREE.TextureLoader();
-
     const action = mixer.clipAction( object.animations[ 0 ] );
     action.play();
 
@@ -50,29 +50,29 @@ function init() {
         if (child.name == "Plane009") {
           const material = new THREE.MeshPhongMaterial({
                 color: 0xffffff,
-                map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/Plane009DiffuseMap.jpg' )});
+                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' )});
           child.material = material;
         }
 
-        let material = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
+        let material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
         if (child.name == "ledRed")
           child.material = material;
         else if (child.name == "ledBlue") {
-          material = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 2});
+          material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 2});
           child.material = material;
         }
 
         else if (child.name == "bar") {
           const material = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/barDiffuseMap.jpg' )});
+            map: textureLoader.load( '/models/textures/barDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name == "StreetSign") {
           const material = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/StreetSignDiffuseMap.jpg' )});
+            map: textureLoader.load( '/models/textures/StreetSignDiffuseMap.jpg' )});
             child.material = material;
         }
 
@@ -95,21 +95,21 @@ function init() {
         else if (child.name == "arcade") {
           const material = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/arcadeDiffuseMap.jpg' )});
+            map: textureLoader.load( '/models/textures/arcadeDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name == "dogg") {
           const material = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/doggDiffuseMap.jpg' )});
+            map: textureLoader.load( '/models/textures/doggDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name == "building") {
           const material = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            map: textureLoader.load( 'https://raw.githubusercontent.com/Ubantu011w/Shishabar/main/models/textures/buildingDiffuseMap.jpg' )});
+            map: textureLoader.load( '/models/textures/buildingDiffuseMap.jpg' )});
             child.material = material;
         }
 
@@ -127,7 +127,7 @@ function init() {
           child.material = material;
         } 
     
-        else if (child.name == "aquiriumGlass") {
+        else if (child.name == "aquiriumGlass" || child.name == "beerGlass") {
           material = new THREE.MeshPhysicalMaterial({ // material for water balloon
             roughness: 0.110,
             clearcoat: 1,
@@ -135,8 +135,25 @@ function init() {
           })
           child.material = material;
       }
-    
-  }});
+
+      else if (child.name == "textShisha") {
+        material = new THREE.MeshStandardMaterial({color: 0x000000, emissive: 0xFF0000, emissiveIntensity: 5});
+        child.material = material;
+        tween = gsap.to(child.material, {
+          duration: 5,
+          repeat: -1,
+          emissiveIntensity: 0.2
+        })
+        tween.play();
+      }
+
+      else if (child.name == "board") {
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          map: textureLoader.load( '/models/textures/board.jpg' )});
+          child.material = material;
+      }
+    }});
 
     scene.add( object );
   } );
@@ -146,7 +163,7 @@ function init() {
   renderer.setSize( window.innerWidth, window.innerHeight );
   container.appendChild( renderer.domElement );
 
-  const controls = new OrbitControls( camera, renderer.domElement );
+  controls = new OrbitControls( camera, renderer.domElement );
   controls.update();
   window.addEventListener( 'resize', onWindowResize );
 
@@ -173,14 +190,21 @@ function onPointerDown( event ) {
   if ( intersects.length > 0 ) {
     const intersect = intersects[ 0 ];
     intersect.object.material = new THREE.MeshPhongMaterial({emissive: 0xffffff, emissiveIntensity: 1});
-    moving = true;
-    xFinal = 200;
-    yFinal = 100;
-    zFinal = 50;
-/*     gsap.to(camera.position, {
-      z: 14,
-      duration: 1.5
-    }); */
+    
+    gsap.to(camera.position, { duration: 1.5, ease: "power1.inOut",
+      x: 21.5,
+      y: 192,
+      z: 107
+    })
+
+    gsap.to(camera.target, { duration: 1.5, ease: "power1.inOut",
+      x: 50,
+      y:11,
+      z: 106
+    })
+
+    controls.enableRotate = false
+    controls.enableZoom = true;
   }
 }
 
@@ -194,13 +218,11 @@ function onWindowResize() {
 }
 
 //
-
 function animate() {
   requestAnimationFrame( animate );
   
   const delta = clock.getDelta();
-
   if ( mixer ) mixer.update( delta );
-
   renderer.render( scene, camera );
+
 }
