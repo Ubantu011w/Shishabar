@@ -4,10 +4,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
 import { gsap } from 'gsap';
-import { Tween } from 'gsap/gsap-core';
 
 let camera, scene, renderer, mixer;
 let pointer, raycaster;
+let aboutMe;
+
 const clock = new THREE.Clock();
 
 const objects = [];
@@ -50,15 +51,28 @@ function init() {
         if (child.name == "Plane009") {
           const material = new THREE.MeshPhongMaterial({
                 color: 0xffffff,
-                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' )});
+                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' ),
+              });
           child.material = material;
         }
 
-        let material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
-        if (child.name == "ledRed")
+        let material; 
+        if (child.name == "ledRed") {
+          material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
           child.material = material;
+        }
+
+        if (child.name == "fish") {
+          material = new THREE.MeshStandardMaterial({ color: 0xff0000});
+          child.material = material;
+        }
+
         else if (child.name == "ledBlue") {
-          material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 2});
+          material = new THREE.MeshStandardMaterial({ color: 0x005eff, emissive: 0x005eff, emissiveIntensity: 5});
+          child.material = material;
+        }
+        else if (child.name == "ledRoof") {
+          material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
           child.material = material;
         }
 
@@ -148,10 +162,18 @@ function init() {
       }
 
       else if (child.name == "board") {
-        const material = new THREE.MeshStandardMaterial({
+        material = new THREE.MeshStandardMaterial({
           color: 0xffffff,
           map: textureLoader.load( '/models/textures/board.jpg' )});
           child.material = material;
+      }
+
+      else if (child.name == "screenAboutme") {
+        material = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          map: textureLoader.load( '/models/textures/aboutMe.jpg' )});
+          child.material = material;
+          aboutMe = child;
       }
     }});
 
@@ -190,21 +212,17 @@ function onPointerDown( event ) {
   if ( intersects.length > 0 ) {
     const intersect = intersects[ 0 ];
     intersect.object.material = new THREE.MeshPhongMaterial({emissive: 0xffffff, emissiveIntensity: 1});
-    
-    gsap.to(camera.position, { duration: 1.5, ease: "power1.inOut",
-      x: 21.5,
-      y: 192,
-      z: 107
-    })
-
-    gsap.to(camera.target, { duration: 1.5, ease: "power1.inOut",
+    aboutMe.material = new THREE.MeshStandardMaterial({
+      color: 0x000000});
+     gsap.to(camera.position, { duration: 1.5, ease: "power1.inOut",
       x: 50,
-      y:11,
-      z: 106
+/*       y: 192,
+      z: 50 */
     })
+    
 
-    controls.enableRotate = false
-    controls.enableZoom = true;
+/*     controls.enableRotate = false
+    controls.enableZoom = true; */
   }
 }
 
