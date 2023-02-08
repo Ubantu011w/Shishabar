@@ -40,7 +40,7 @@ let screens = [ // projects
 	new Screen(path + "projectHotel" + format, 'https://github.com/Ubantu011w/hotelcalifornia', null),
   new Screen(path + "projectkor" + format, null, 'https://youtu.be/i1NfbDaRyM0'),
   new Screen(path + "projectPark" + format, 'https://github.com/Ubantu011w/Parking-Radar-Application', null),
-  new Screen(path + "projectSwe" + format, 'https://github.com/Ubantu011w/hotelcalifornia', 'https://youtu.be/hfwF2D-lebM'),
+  new Screen(path + "projectSwe" + format, 'https://github.com/Ubantu011w/Swevent', 'https://youtu.be/hfwF2D-lebM'),
   new Screen(path + "projectUnity" + format, 'https://www.youtube.com/watch?v=ZhbVWzS0zP0&list=PLX3B88iPgRHsLoYeM8heYbFqIG5WB-uhV', null),
   0
 ];
