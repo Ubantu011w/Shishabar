@@ -3,32 +3,32 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
-import { MeshPhysicalNodeMaterial, add, mul, normalWorld, timerLocal, mx_noise_vec3, mx_worley_noise_vec3, mx_cell_noise_float, mx_fractal_noise_vec3 } from 'three/nodes';
-import { nodeFrame } from 'three/addons/renderers/webgl/nodes/WebGLNodes.js';
-
 import { Screen } from './Screen.js'
-
-/* import TransitionVertexShader from '/shaders/vertex.glsl'
-import TransitionFragmentShader from '/shaders/fragment.glsl' */
 
 import { gsap } from 'gsap';
 
-let camera, scene, renderer, mixer;
+let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
 let sound;
+
+const loadingManager = new THREE.LoadingManager();
+
+loadingManager.onLoad = function() {
+  console.log("doneLoading");
+}
 
 const clock = new THREE.Clock();
 
 const objects = []; //raycast
 
-const helpers = [];
+const helpers = []; //raycast
 
 let screenmode = false;
 let screenAboutMode = false;
 
 let tween, controls, center;
 let screenProjects, screenAboutme;
-let Aku, boxingBag;
+let boxingBag;
 
 let meshes = [], clonemeshes = []; // aku aku
 let mesh;
@@ -36,7 +36,7 @@ let mesh;
 const path = 'models/textures/screens/';
 const format = '.jpg';
 
-let screens = [
+let screens = [ // projects
 	new Screen(path + "projectHotel" + format, 'https://github.com/Ubantu011w/hotelcalifornia', null),
   new Screen(path + "projectkor" + format, null, 'https://youtu.be/i1NfbDaRyM0'),
   new Screen(path + "projectPark" + format, 'https://github.com/Ubantu011w/Parking-Radar-Application', null),
@@ -45,11 +45,50 @@ let screens = [
   0
 ];
 
+let screensAbout = [
+  new THREE.TextureLoader().load("models/textures/screens/aboutStart.jpg"),
+  new THREE.TextureLoader().load("models/textures/screens/aboutName.jpg"),
+  new THREE.TextureLoader().load("models/textures/screens/aboutSkills.jpg")
+]
+
+
 init();
 animate();
 moveit();
 
+// first shader test
+var tuniform = {
+  iGlobalTime:    { type: 'f', value: 0.1 },
+};
+
+var mat = new THREE.ShaderMaterial( {
+  uniforms: tuniform,
+  vertexShader: `varying vec2 vUv; 
+  void main()
+  {
+      vUv = uv;
+  
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0 );
+      gl_Position = projectionMatrix * mvPosition;
+  }`,
+  fragmentShader: `uniform float iGlobalTime;
+  varying vec2 vUv;
+  void main()
+  {
+      // Normalized pixel coordinates (from 0 to 1)
+      vec2 uv = -1.0 + 2.0 *vUv;
+  
+      // Time varying pixel color
+      vec3 col = 0.5 + 0.5*cos(iGlobalTime+uv.xyx+vec3(0,2,4));
+  
+      // Output to screen
+      gl_FragColor = vec4(col,1.0);
+  }`,            
+} );
+
 function init() {
+
+
   const container = document.createElement( 'div' );
   document.body.appendChild( container );
   
@@ -68,11 +107,11 @@ function init() {
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
 
-  document.addEventListener( 'pointermove', onPointerMove );
+  /* document.addEventListener( 'pointermove', onPointerMove ); */
   document.addEventListener( 'pointerdown', onPointerDown );
 
   // model
-  const loader = new FBXLoader();
+  const loader = new FBXLoader(loadingManager);
   loader.load( 'models/fbx/scene.fbx', function ( object ) {
 
     mixer = new THREE.AnimationMixer( object );
@@ -103,11 +142,6 @@ function init() {
           child.material = material;
         }
 
-        if (child.name == "fish") {
-          material = new THREE.MeshStandardMaterial({ color: 0xff0000});
-          child.material = material;
-        }
-
         else if (child.name == "ledBlue") {
           material = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 5});
           child.material = material;
@@ -131,11 +165,6 @@ function init() {
             child.material = material;
         }
 
-        else if (child.name == "Sphere010" || child.name == "Sphere012" || child.name == "Sphere014" || child.name.includes("Bulb"))  {
-          material = new THREE.MeshStandardMaterial({emissive: 0xffffff, emissiveIntensity: 1});
-          child.material = material;
-        }
-
         else if (child.name.includes("sign_")) {
           material = new THREE.MeshBasicMaterial({ color: 0x000000});
           objects.push(child);
@@ -143,7 +172,7 @@ function init() {
         }
 
         else if (child.name == "textProjects" || child.name == "textAbout" || child.name == "textCredits") {
-          material = new THREE.MeshPhongMaterial({ color: 0x00ffff});
+          material = new THREE.MeshBasicMaterial({ color: 0x0000ff});
           child.material = material;
         }
 
@@ -236,12 +265,7 @@ function init() {
       }
 
       else if (child.name == "hologram") {
-        const offsetNode = timerLocal();
-        const customUV = add( mul( normalWorld, 100 ), offsetNode );
-        let noiseMaterial = new MeshPhysicalNodeMaterial();
-        noiseMaterial.colorNode = mx_noise_vec3( customUV );
-        
-        child.material = noiseMaterial;
+        child.material = mat;
       }
 
       else if (child.name == "boxingBag") {
@@ -263,18 +287,18 @@ function init() {
       }
 
       else if (child.name == "boxingScreen2") {
-        const video = document.createElement('video');
-        video.src = "/models/textures/boxingScreen2.mp4";
-        video.load();
-        video.loop = true;
-        video.muted = "muted";
-        const texture = new THREE.VideoTexture(video);
-        material = new THREE.MeshLambertMaterial({map: texture});
+        material = mat;
         child.material = material;
-        video.play();
       }
 
-    } else {
+      else if (child.name == "boxingScreen3") {
+        material = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          map: textureLoader.load( '/models/textures/boxingScreen3.jpg' ),
+        })
+          child.material = material;
+      }
+
     }
   
   });
@@ -294,16 +318,36 @@ function init() {
 
   window.addEventListener( 'resize', onWindowResize );
 
-  //Aku Aku
-
-  loader.load( 'models/fbx/aku.fbx', function ( object ) {
+  
+  loader.load( 'models/fbx/aku.fbx', function ( object ) { //Aku Aku
 
     const positions = combineBuffer( object, 'position' );
 
-    createMesh( positions, 1,  -26 , 196, 60, 0xffffff );
+    createMesh( positions, 0.5, -26 , 198, 60, Math.random() * 0xfffffff);
 
-  } );
+    objects.push(object);
+
+  });
+
+  loader.load( 'models/fbx/fish.fbx', function ( object ) { // fish
+
+    object.traverse( function ( child ) {
+      mixerFish = new THREE.AnimationMixer( object );
+      const action = mixerFish.clipAction( object.animations[ 0 ] );
+      action.play();
+
+      if ( child.isMesh && child.name == "fish") {
+        const material = new THREE.MeshBasicMaterial({
+              color: 0xff0011,
+            });
+        child.material = material;
+      }
+
+    });
+    scene.add(object);
+  });
 }
+var destroyAku = false;
 
 function onPointerMove( event ) {
 
@@ -346,7 +390,13 @@ function onPointerDown( event ) {
   }
 
   if (intersect.object.name == "AkuAku") {
-    destroyAku();
+    destroyAku = true;
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load( 'models/sounds/vanish.mp3', function( buffer ) {
+    sound.setBuffer( buffer );
+    sound.setVolume( 0.5 );
+    sound.play();
+    });
     screenmode = false;
   }
 
@@ -374,7 +424,7 @@ function onPointerDown( event ) {
       if (intersect.object.name.includes("Back")) {
         screenmode = false;
         screenAboutMode = false;
-        screenAboutme.material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load(path + "aboutStart" + format)});
+        screenAboutme.material.map = screensAbout[0];
         moveit();
       }
       else if (intersect.object.name == 'projectVideo' || intersect.object.name == 'projectSource' || intersect.object.name.includes('com')) {
@@ -408,78 +458,7 @@ function onPointerDown( event ) {
   }
 }
 
-function moveit() {
-  gsap.to(camera.position, { 
-    duration: 2, 
-    ease: "power1.inOut",
-    x: -100,
-    y: 250, 
-    z: -550,
-  })
-
-  gsap.to(controls.target, { 
-    duration: 2, 
-    ease: "power1.inOut",
-    x: 0,
-    y: 0.5, 
-    z: 0,
-  })
-  controls.enableZoom = true;
-  controls.enableRotate = true;
-}
-
-function moveToProjects(duration) {
-  gsap.to(camera.position, { 
-    duration: 1.5,
-    ease: "power1.inOut",
-    x: -1.27,
-    y: 195,
-    z: 147, 
-  })
-
-
-  gsap.to(controls.target, { 
-    duration: 1.5,
-    ease: "power1.inOut",
-    x: -3.3,
-    y: 183,
-    z: 90
-  })
-
-  controls.enableRotate = false
-}
-
-function moveToAboutme(duration) {
-  var main = center.getCenter( new THREE.Vector3() );
-  gsap.to(camera.position, { // arcade
-    duration: 1.5,
-    ease: "power1.inOut",
-    x: main.x - 120,
-    y: main.y + 40,
-    z: main.z, // maybe adding even more offset depending on your model
-    onUpdate: function() {
-      camera.lookAt( main );
-    }
-  })
-
-  controls.enableRotate = false
-}
-
-function moveToCredits(duration) {
-  screenmode = false;
-  gsap.to(camera.position, { 
-    duration: 1.5,
-    ease: "power1.inOut",
-    x: -300,
-    y: 80,
-    z: 90, 
-  })
-}
-
-console.log(helpers[0])
 function changeScreen(name) {
-  const source = helpers.find(element => element.name == 'projectSource');
-  const video = helpers.find(element => element.name == 'projectVideo');
   let i;
   if (name.includes("project")) {
     switch (name){
@@ -509,19 +488,21 @@ function changeScreen(name) {
     switch (name) {
       case "aboutStart":
         if (!screenAboutMode) {
-          screenAboutme.material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load(path + "aboutName" + format)});
+          screenAboutme.material.map = screensAbout[1];
           screenAboutMode = true;
         }
         break;
       case "aboutNext":
         if (screenAboutMode)
-        screenAboutme.material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load(path + "aboutSkills" + format)});
+        screenAboutme.material.map = screensAbout[2]
         break;
       default:
         break;
     }
   }
 }
+
+
 
 function onWindowResize() {
 
@@ -537,11 +518,14 @@ function animate() {
   requestAnimationFrame( animate );
   const delta = clock.getDelta();
   if ( mixer ) mixer.update( delta );
+  if ( mixerFish ) mixerFish.update( delta );
   controls.update();
   renderer.render( scene, camera );
+  if (tuniform)
+    tuniform.iGlobalTime.value += delta;
   if (mesh)
     render()
-  nodeFrame.update();
+
 }
 
 function combineBuffer( model, bufferName ) { // copied from webgl_points_dynamic
@@ -581,14 +565,6 @@ function combineBuffer( model, bufferName ) { // copied from webgl_points_dynami
 
 }
 
-function destroyAku() {
-
-  // why cant you be better
-
-
-
-}
-
 function createMesh( positions, scale, x, y, z, color ) {
 
   const geometry = new THREE.BufferGeometry();
@@ -613,8 +589,10 @@ function createMesh( positions, scale, x, y, z, color ) {
 
   for ( let i = 0; i < clones.length; i ++ ) {
 
-    mesh = new THREE.Points( geometry, new THREE.PointsMaterial( { size: 1, color: 0xFFFFFF } ) );
+    mesh = new THREE.Points( geometry, new THREE.PointsMaterial( { size: 1, color: color } ) );
     mesh.scale.x = mesh.scale.y = mesh.scale.z = scale;
+    mesh.name = "AkuAku";
+    objects.push(mesh);
 
     mesh.position.x = x + clones[ i ][ 0 ];
     mesh.position.y = y + clones[ i ][ 1 ];
@@ -645,6 +623,7 @@ function render() {
 
   }
 
+
     const data = meshes[ 0 ];
     const positions = data.mesh.geometry.attributes.position;
     const initialPositions = data.mesh.geometry.attributes.initialPosition;
@@ -665,6 +644,9 @@ function render() {
 
     }
 
+    if (destroyAku) {
+
+
     for ( let i = 0; i < count; i ++ ) {
 
       const px = positions.getX( i );
@@ -684,16 +666,13 @@ function render() {
           );
 
         } else {
-
           data.verticesDown += 1;
-
         }
 
       }
 
       // rising up
       if ( data.direction > 0 ) {
-
         const ix = initialPositions.getX( i );
         const iy = initialPositions.getY( i );
         const iz = initialPositions.getZ( i );
@@ -712,11 +691,8 @@ function render() {
             py - ( py - iy ) / dy * data.speed * delta * ( 1 + Math.random() ),
             pz - ( pz - iz ) / dz * data.speed * delta * ( 0.85 - Math.random() )
           );
-
         } else {
-
           data.verticesUp += 1;
-
         }
 
       }
@@ -724,7 +700,6 @@ function render() {
 
     // all vertices down
     if ( data.verticesDown >= count ) {
-
       if ( data.delay <= 0 ) {
 
         data.direction = 1;
@@ -736,7 +711,7 @@ function render() {
         audioLoader.load( 'models/sounds/appears.mp3', function( buffer ) {
         sound.setBuffer( buffer );
         sound.setVolume( 0.5 );
-        /* sound.play(); */
+        sound.play();
         });
         
       } else {
@@ -748,21 +723,15 @@ function render() {
     }
 
     // all vertices up
-    if ( data.verticesUp >= count ) {
-
-      if ( data.delay <= 0 ) {
-
+      if ( data.verticesUp >= count ) {
+      if ( data.delay <= 0 ) {  
+        destroyAku = false;
         data.direction = - 1;
         data.speed = 50;
         data.verticesUp = 0;
         data.delay = 350;
 
-        const audioLoader = new THREE.AudioLoader();
-        audioLoader.load( 'models/sounds/vanish.mp3', function( buffer ) {
-        sound.setBuffer( buffer );
-        sound.setVolume( 0.5 );
-        /* sound.play(); */
-        });
+
       } else {
 
         data.delay -= 1;
@@ -772,5 +741,106 @@ function render() {
     }
 
     positions.needsUpdate = true;
+  }
 
+}
+
+function SetControlsLimit(direction) {
+  switch (direction) {
+    case 0: // home
+      controls.minDistance = 350;
+      controls.maxDistance = 800;
+      controls.minPolarAngle = 0;
+      controls.maxPolarAngle = Math.PI / 2
+      controls.enableRotate = true;
+      break;
+    case 1: // projects
+      controls.minDistance = 10.0,
+      controls.maxDistance = 100.0
+      break;
+    case 2: // aboutme
+      controls.minDistance = 200;
+      controls.maxDistance = 400;
+      break;
+    case 3: // reset
+    gsap.to(controls, {
+      duration: 2.5,
+      minDistance : 0,
+      maxDistance : 0,
+      onComplete: () => controls.enableRotate = false
+     })
+    default:
+      break;
+  }
+}
+
+function moveit() {
+  controls.minDistance = -Infinity;
+  controls.maxDistance = Infinity;
+  gsap.to(camera.position, { 
+    duration: 2, 
+    ease: "power1.inOut",
+    x: 200,
+    y: 250, 
+    z: -550,
+    onComplete: () => SetControlsLimit(0) 
+  })
+
+  gsap.to(controls.target, { 
+    duration: 2, 
+    ease: "power1.inOut",
+    x: 0,
+    y: 0.5, 
+    z: 0,
+  })
+  controls.enableZoom = true;
+  controls.enableRotate = true;
+}
+
+function moveToProjects(duration) {
+  controls.minDistance = -Infinity;
+  controls.maxDistance = Infinity;
+
+  gsap.to(camera.position, { 
+    duration: 1.5,
+    ease: "power1.inOut",
+    x: -1.27,
+    y: 195,
+    z: 130, 
+    onComplete: () => SetControlsLimit(1) 
+  })
+
+  gsap.to(controls.target, { 
+    duration: 1.5,
+    ease: "power1.inOut",
+    x: -1.6,
+    y: 183,
+    z: 90,
+  })
+}
+
+function moveToAboutme(duration) {
+  controls.minDistance = -Infinity;
+  controls.maxDistance = Infinity;
+  var main = center.getCenter( new THREE.Vector3() );
+  controls.enableRotate = false;
+  gsap.to(camera.position, { // arcade
+    duration: 1.5,
+    ease: "power1.inOut",
+    x: main.x - 140,
+    y: main.y + 50,
+    z: main.z, // maybe adding even more offset depending on your model
+    onComplete: () => SetControlsLimit(2)
+  })
+}
+
+function moveToCredits(duration) {
+  screenmode = false;
+  gsap.to(camera.position, { 
+    duration: 1.5,
+    ease: "power1.inOut",
+    x: -300,
+    y: 80,
+    z: 90, 
+  })
 }
