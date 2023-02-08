@@ -748,7 +748,7 @@ function render() {
 function SetControlsLimit(direction) {
   switch (direction) {
     case 0: // home
-      controls.minDistance = 350;
+      controls.minDistance = 250;
       controls.maxDistance = 800;
       controls.minPolarAngle = 0;
       controls.maxPolarAngle = Math.PI / 2
@@ -757,6 +757,7 @@ function SetControlsLimit(direction) {
     case 1: // projects
       controls.minDistance = 10.0,
       controls.maxDistance = 100.0
+      controls.enableRotate = false
       break;
     case 2: // aboutme
       controls.minDistance = 200;
@@ -828,19 +829,24 @@ function moveToAboutme(duration) {
     duration: 1.5,
     ease: "power1.inOut",
     x: main.x - 140,
-    y: main.y + 50,
+    y: main.y + 55,
     z: main.z, // maybe adding even more offset depending on your model
     onComplete: () => SetControlsLimit(2)
   })
 }
 
 function moveToCredits(duration) {
+  controls.minDistance = -Infinity;
+  controls.maxDistance = Infinity;
   screenmode = false;
   gsap.to(camera.position, { 
     duration: 1.5,
     ease: "power1.inOut",
     x: -300,
     y: 80,
-    z: 90, 
+    z: 110,
+    onComplete: () => {
+      SetControlsLimit(0)
+    }
   })
 }
