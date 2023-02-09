@@ -2,12 +2,14 @@ import * as THREE from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+/* import { Reflector } from 'three/addons/objects/Reflector.js'; */
 
 import { Screen } from './Screen.js'
 
 import { gsap } from 'gsap';
 
 let camera, scene, renderer, mixer, mixerFish;
+let groundMirror;
 let pointer, raycaster;
 let sound;
 
@@ -86,6 +88,7 @@ var mat = new THREE.ShaderMaterial( {
   }`,            
 } );
 
+
 function init() {
 
 
@@ -125,9 +128,24 @@ function init() {
       if ( child.isMesh ) {
         if (child.name == "Plane009") {
           const material = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
+                color: 0xFFFFFF,    
                 map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' ),
+                roughness: 0.82,
+                metalness: 0.2
               });
+
+              /* let geometry = new THREE.PlaneGeometry( 800, 800 );
+              groundMirror = new Reflector( geometry, {
+                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' ),
+                textureWidth: window.innerWidth * window.devicePixelRatio,
+                textureHeight: window.innerHeight * window.devicePixelRatio,
+                color: 0x777777ff,
+                transparent: true
+              } );
+              groundMirror.position.y = 0.5;
+              groundMirror.rotateX( - Math.PI / 2 );
+              scene.add( groundMirror ); */
+
           child.material = material;
         }
 
@@ -338,7 +356,7 @@ function init() {
 
       if ( child.isMesh && child.name == "fish") {
         const material = new THREE.MeshBasicMaterial({
-              color: 0xff0011,
+              map: new THREE.TextureLoader().load("models/textures/fishDiffuseMap.jpg")
             });
         child.material = material;
       }
@@ -510,6 +528,11 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize( window.innerWidth, window.innerHeight );
+
+  groundMirror.getRenderTarget().setSize(
+    window.innerWidth * window.devicePixelRatio,
+    window.innerHeight * window.devicePixelRatio
+  );
 
 }
 
@@ -753,15 +776,18 @@ function SetControlsLimit(direction) {
       controls.minPolarAngle = 0;
       controls.maxPolarAngle = Math.PI / 2
       controls.enableRotate = true;
+      controls.enabled = true;
       break;
     case 1: // projects
       controls.minDistance = 10.0,
       controls.maxDistance = 100.0
       controls.enableRotate = false
+      controls.enabled = true;
       break;
     case 2: // aboutme
       controls.minDistance = 200;
       controls.maxDistance = 400;
+      controls.enabled = true;
       break;
     case 3: // reset
     gsap.to(controls, {
@@ -778,6 +804,7 @@ function SetControlsLimit(direction) {
 function moveit() {
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
+  controls.enabled = false;
   gsap.to(camera.position, { 
     duration: 2, 
     ease: "power1.inOut",
@@ -801,7 +828,7 @@ function moveit() {
 function moveToProjects(duration) {
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
-
+  controls.enabled = false;
   gsap.to(camera.position, { 
     duration: 1.5,
     ease: "power1.inOut",
@@ -825,13 +852,16 @@ function moveToAboutme(duration) {
   controls.maxDistance = Infinity;
   var main = center.getCenter( new THREE.Vector3() );
   controls.enableRotate = false;
+  controls.enabled = false;
   gsap.to(camera.position, { // arcade
     duration: 1.5,
     ease: "power1.inOut",
     x: main.x - 140,
     y: main.y + 55,
     z: main.z, // maybe adding even more offset depending on your model
-    onComplete: () => SetControlsLimit(2)
+    onComplete: () =>  {
+      SetControlsLimit(2);
+      }
   })
 }
 
@@ -842,9 +872,9 @@ function moveToCredits(duration) {
   gsap.to(camera.position, { 
     duration: 1.5,
     ease: "power1.inOut",
-    x: -300,
+    x: -320,
     y: 80,
-    z: 110,
+    z: 120,
     onComplete: () => {
       SetControlsLimit(0)
     }
