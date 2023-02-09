@@ -9,7 +9,6 @@ import { Screen } from './Screen.js'
 import { gsap } from 'gsap';
 
 let camera, scene, renderer, mixer, mixerFish;
-let groundMirror;
 let pointer, raycaster;
 let sound;
 
@@ -528,11 +527,6 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize( window.innerWidth, window.innerHeight );
-
-  groundMirror.getRenderTarget().setSize(
-    window.innerWidth * window.devicePixelRatio,
-    window.innerHeight * window.devicePixelRatio
-  );
 
 }
 
