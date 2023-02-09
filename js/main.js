@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-/* import { Reflector } from 'three/addons/objects/Reflector.js'; */
+import { Gradient } from './shaders/Gradient.js';
 
 import { Screen } from './Screen.js'
 
@@ -30,6 +30,7 @@ let screenAboutMode = false;
 let tween, controls, center;
 let screenProjects, screenAboutme;
 let boxingBag;
+var grad;
 
 let meshes = [], clonemeshes = []; // aku aku
 let mesh;
@@ -52,41 +53,9 @@ let screensAbout = [
   new THREE.TextureLoader().load("models/textures/screens/aboutSkills.jpg")
 ]
 
-
 init();
 animate();
 moveit();
-
-// first shader test
-var tuniform = {
-  iGlobalTime:    { type: 'f', value: 0.1 },
-};
-
-var mat = new THREE.ShaderMaterial( {
-  uniforms: tuniform,
-  vertexShader: `varying vec2 vUv; 
-  void main()
-  {
-      vUv = uv;
-  
-      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0 );
-      gl_Position = projectionMatrix * mvPosition;
-  }`,
-  fragmentShader: `uniform float iGlobalTime;
-  varying vec2 vUv;
-  void main()
-  {
-      // Normalized pixel coordinates (from 0 to 1)
-      vec2 uv = -1.0 + 2.0 *vUv;
-  
-      // Time varying pixel color
-      vec3 col = 0.5 + 0.5*cos(iGlobalTime+uv.xyx+vec3(0,2,4));
-  
-      // Output to screen
-      gl_FragColor = vec4(col,1.0);
-  }`,            
-} );
-
 
 function init() {
 
@@ -133,13 +102,13 @@ function init() {
                 metalness: 0.2
               });
 
-              /* let geometry = new THREE.PlaneGeometry( 800, 800 );
+
+/*               let geometry = new THREE.PlaneGeometry( 80, 80 );
               groundMirror = new Reflector( geometry, {
                 map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' ),
                 textureWidth: window.innerWidth * window.devicePixelRatio,
                 textureHeight: window.innerHeight * window.devicePixelRatio,
                 color: 0x777777ff,
-                transparent: true
               } );
               groundMirror.position.y = 0.5;
               groundMirror.rotateX( - Math.PI / 2 );
@@ -282,7 +251,11 @@ function init() {
       }
 
       else if (child.name == "hologram") {
-        child.material = mat;
+        if (grad)
+          child.material = grad.material
+        else {
+          grad = new Gradient(child)
+        }
       }
 
       else if (child.name == "boxingBag") {
@@ -304,8 +277,11 @@ function init() {
       }
 
       else if (child.name == "boxingScreen2") {
-        material = mat;
-        child.material = material;
+        if (grad)
+        child.material = grad.material
+        else {
+          grad = new Gradient(child)
+        }
       }
 
       else if (child.name == "boxingScreen3") {
@@ -538,8 +514,8 @@ function animate() {
   if ( mixerFish ) mixerFish.update( delta );
   controls.update();
   renderer.render( scene, camera );
-  if (tuniform)
-    tuniform.iGlobalTime.value += delta;
+  if (grad)
+    grad.updateGlobal();
   if (mesh)
     render()
 
