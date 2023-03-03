@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { Gradient } from './shaders/Gradient.js';
+import { Rays } from './shaders/Rays.js';
 
 import { Screen } from './Screen.js'
 
@@ -11,6 +12,7 @@ import { gsap } from 'gsap';
 let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
 let sound;
+let pointerDisable = false;
 
 const loadingManager = new THREE.LoadingManager();
 
@@ -35,7 +37,7 @@ var grad;
 let meshes = [], clonemeshes = []; // aku aku
 let mesh;
 
-const path = 'models/textures/screens/';
+const path = 'static/textures/screens/';
 const format = '.jpg';
 
 let screens = [ // projects
@@ -48,9 +50,9 @@ let screens = [ // projects
 ];
 
 let screensAbout = [
-  new THREE.TextureLoader().load("models/textures/screens/aboutStart.jpg"),
-  new THREE.TextureLoader().load("models/textures/screens/aboutName.jpg"),
-  new THREE.TextureLoader().load("models/textures/screens/aboutSkills.jpg")
+  new THREE.TextureLoader().load("static/textures/screens/aboutStart.jpg"),
+  new THREE.TextureLoader().load("static/textures/screens/aboutName.jpg"),
+  new THREE.TextureLoader().load("static/textures/screens/aboutSkills.jpg")
 ]
 
 init();
@@ -58,8 +60,6 @@ animate();
 moveit();
 
 function init() {
-
-
   const container = document.createElement( 'div' );
   document.body.appendChild( container );
   
@@ -83,7 +83,7 @@ function init() {
 
   // model
   const loader = new FBXLoader(loadingManager);
-  loader.load( 'models/fbx/scene.fbx', function ( object ) {
+  loader.load( 'static/models/scene.fbx', function ( object ) {
 
     mixer = new THREE.AnimationMixer( object );
     
@@ -97,15 +97,13 @@ function init() {
         if (child.name == "Plane009") {
           const material = new THREE.MeshBasicMaterial({
                 color: 0xFFFFFF,    
-                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' ),
-                roughness: 0.82,
-                metalness: 0.2
+                map: textureLoader.load( '/static/textures/Plane009DiffuseMap.jpg' ),
               });
-
+              
 
 /*               let geometry = new THREE.PlaneGeometry( 80, 80 );
               groundMirror = new Reflector( geometry, {
-                map: textureLoader.load( '/models/textures/Plane009DiffuseMap.jpg' ),
+                map: textureLoader.load( '/static/textures/Plane009DiffuseMap.jpg' ),
                 textureWidth: window.innerWidth * window.devicePixelRatio,
                 textureHeight: window.innerHeight * window.devicePixelRatio,
                 color: 0x777777ff,
@@ -114,7 +112,8 @@ function init() {
               groundMirror.rotateX( - Math.PI / 2 );
               scene.add( groundMirror ); */
 
-          child.material = material;
+            child.material = material;
+
         }
 
         let material; 
@@ -140,19 +139,19 @@ function init() {
         else if (child.name == "bar") {
           const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: textureLoader.load( '/models/textures/barDiffuseMap.jpg' )});
+            map: textureLoader.load( '/static/textures/barDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name == "StreetSign") {
           const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: textureLoader.load( '/models/textures/StreetSignDiffuseMap.jpg' )});
+            map: textureLoader.load( '/static/textures/StreetSignDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name.includes("sign_")) {
-          material = new THREE.MeshBasicMaterial({ color: 0x000000});
+          material = new THREE.MeshStandardMaterial({ color: 0x000000});
           objects.push(child);
           child.material = material;
         }
@@ -165,7 +164,7 @@ function init() {
         else if (child.name == "arcade") {
           const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: textureLoader.load( '/models/textures/arcadeDiffuseMap.jpg' )});
+            map: textureLoader.load( '/static/textures/arcadeDiffuseMap.jpg' )});
             child.material = material;
             objects.push(child);
         }
@@ -173,20 +172,20 @@ function init() {
         else if (child.name == "dogg") {
           const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: textureLoader.load( '/models/textures/doggDiffuseMap.jpg' )});
+            map: textureLoader.load( '/static/textures/doggDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name == "building") {
           const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: textureLoader.load( '/models/textures/buildingDiffuseMap.jpg' )});
+            map: textureLoader.load( '/static/textures/buildingDiffuseMap.jpg' )});
             child.material = material;
         }
 
         else if (child.name == "boxingScreen") {
           const video = document.createElement('video');
-          video.src = "/models/textures/boxingScreen.mp4";
+          video.src = "/static/textures/boxingScreen.mp4";
           video.load();
           video.loop = true;
           video.muted = "muted";
@@ -225,22 +224,23 @@ function init() {
       else if (child.name == "board") {
         material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
-          map: textureLoader.load( '/models/textures/board.jpg' )});
+          map: textureLoader.load( '/static/textures/board.jpg' )});
           child.material = material;
       }
 
       else if (child.name == "screenAboutme") {
         material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
-          map: textureLoader.load( '/models/textures/screens/aboutStart.jpg' ),
+          map: textureLoader.load( '/static/textures/screens/aboutStart.jpg' ),
         })
           child.material = material;
           screenAboutme = child;
           center = new THREE.Box3().setFromObject( child );
+          objects.push(child);
       }
 
       else if (child.name == "screenProjects") {
-        material = new THREE.MeshBasicMaterial({color: 0xffffff, map: textureLoader.load('/models/textures/screens/projectHotel.jpg')});
+        material = new THREE.MeshBasicMaterial({color: 0xffffff, map: textureLoader.load('/static/textures/screens/projectHotel.jpg')});
         child.material = material;
         screenProjects = child;
       }
@@ -270,7 +270,7 @@ function init() {
       else if (child.name == "arcadePack") {
         material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
-          map: textureLoader.load( '/models/textures/arcadePackDiffuseMap.jpg' ),
+          map: textureLoader.load( '/static/textures/arcadePackDiffuseMap.jpg' ),
         })
           child.material = material;
           screenAboutme = child;
@@ -278,7 +278,7 @@ function init() {
 
       else if (child.name == "boxingScreen2") {
         if (grad)
-        child.material = grad.material
+          child.material = grad.material
         else {
           grad = new Gradient(child)
         }
@@ -287,7 +287,7 @@ function init() {
       else if (child.name == "boxingScreen3") {
         material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
-          map: textureLoader.load( '/models/textures/boxingScreen3.jpg' ),
+          map: textureLoader.load( '/static/textures/boxingScreen3.jpg' ),
         })
           child.material = material;
       }
@@ -312,7 +312,7 @@ function init() {
   window.addEventListener( 'resize', onWindowResize );
 
   
-  loader.load( 'models/fbx/aku.fbx', function ( object ) { //Aku Aku
+  loader.load( 'static/models/aku.fbx', function ( object ) { //Aku Aku
 
     const positions = combineBuffer( object, 'position' );
 
@@ -322,25 +322,25 @@ function init() {
 
   });
 
-  loader.load( 'models/fbx/fish.fbx', function ( object ) { // fish
+  loader.load( 'static/models/fish.fbx', function ( object ) { // fish
 
     object.traverse( function ( child ) {
       mixerFish = new THREE.AnimationMixer( object );
       const action = mixerFish.clipAction( object.animations[ 0 ] );
       action.play();
 
-      if ( child.isMesh && child.name == "fish") {
         const material = new THREE.MeshBasicMaterial({
-              map: new THREE.TextureLoader().load("models/textures/fishDiffuseMap.jpg")
+              map: new THREE.TextureLoader().load("static/textures/fishDiffuseMap.jpg")
             });
         child.material = material;
-      }
 
     });
     scene.add(object);
   });
 }
 var destroyAku = false;
+
+
 
 function onPointerMove( event ) {
 
@@ -353,101 +353,114 @@ function onPointerMove( event ) {
 }
 
 function onPointerDown( event ) {
+  if (!pointerDisable) {
+    if (event.button == 0) {
+    pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 
-  if (event.button == 0) {
-  pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+    raycaster.setFromCamera( pointer, camera );
 
-  raycaster.setFromCamera( pointer, camera );
+    const intersects = raycaster.intersectObjects( objects, false );
 
-  const intersects = raycaster.intersectObjects( objects, false );
-
-  if ( intersects.length > 0  && !screenmode) {
-    const intersect = intersects[ 0 ];
-    /* intersect.object.material = new THREE.MeshPhongMaterial({emissive: 0xffffff, emissiveIntensity: 1}); */
-    screenmode = true;
-    switch (intersect.object.name) {
-      case ("sign_projects"):
-      case ("tablet"):
-        moveToProjects(1.5);
-        break;
-      case ("sign_about"):
-      case ("arcade"):
-        moveToAboutme(1.5);
-        break;
-      case ("sign_credits"):
-      case ("boxingHelper"):
-        moveToCredits(1.5);
-        break;
-      default:
-      break;
-  }
-
-  if (intersect.object.name == "AkuAku") {
-    destroyAku = true;
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load( 'models/sounds/vanish.mp3', function( buffer ) {
-    sound.setBuffer( buffer );
-    sound.setVolume( 0.5 );
-    sound.play();
-    });
-    screenmode = false;
-  }
-
-  else if (intersect.object == boxingBag) {
-    gsap.to(boxingBag.rotation,{
-        duration: 0.3, 
-        z: Math.PI / 2,
-        onComplete: () => {
-          setTimeout(() => {
-            gsap.to(boxingBag.rotation,{
-              duration: 0.2, 
-              z: Math.PI,
-            })
-          }, 5000)
-        }
-      })
-
-    screenmode = false;
-  }
-  
-  } else if (screenmode) {
-    const intersects = raycaster.intersectObjects( helpers, false );
-    if (intersects.length > 0) {
+    if ( intersects.length > 0  && !screenmode) {
       const intersect = intersects[ 0 ];
-      if (intersect.object.name.includes("Back")) {
-        screenmode = false;
-        screenAboutMode = false;
-        screenAboutme.material.map = screensAbout[0];
-        moveit();
-      }
-      else if (intersect.object.name == 'projectVideo' || intersect.object.name == 'projectSource' || intersect.object.name.includes('com')) {
-        let current = screens[5];
-        if (intersect.object.name == 'projectSource')
-          window.open(screens[current].source, '_blank');
-        else if (intersect.object.name == 'projectVideo')
-          window.open(screens[current].VideoLink, '_blank');
-        else { // link to social media
-          switch (intersect.object.name) {
-            case 'aboutGitcom':
-              window.open('https://github.com/Ubantu011w', '_blank');
-              break
-            case 'aboutMailcom':
-              window.open('mailto:abdulla.ali.0098@gmail.com', '_blank');
-              break;
-            case 'aboutLinkedcom':
-              window.open('https://www.linkedin.com/in/abdulla-abu-ainin', '_blank');
-              break
-            default:
-              break;
+      /* intersect.object.material = new THREE.MeshPhongMaterial({emissive: 0xffffff, emissiveIntensity: 1}); */
+      screenmode = true;
+      pointerDisable = true;
+      if (intersect.object.name.includes("sign"))
+      intersect.object.material = new THREE.MeshStandardMaterial({emissive: 0xffffff, emissiveIntensity: 1});
+      switch (intersect.object.name) {
+        case ("sign_projects"):
+        case ("tablet"):
+          moveToProjects(1.5);
+          break;
+        case ("sign_about"):
+        case ("arcade"):
+        case ("screenAboutme"):
+          moveToAboutme(1.5);
+          break;
+        case ("sign_credits"):
+        case ("boxingHelper"):
+          moveToCredits(1.5);
+          break;
+        default:
+        break;
+    }
+
+    if (intersect.object.name == "AkuAku") {
+      pointerDisable = false;
+      destroyAku = true;
+      const audioLoader = new THREE.AudioLoader();
+      audioLoader.load( 'static/sounds/vanish.mp3', function( buffer ) {
+      sound.setBuffer( buffer );
+      sound.setVolume( 0.5 );
+      sound.play();
+      });
+      screenmode = false;
+    }
+
+    else if (intersect.object == boxingBag) {
+      gsap.to(boxingBag.rotation,{
+          duration: 0.3, 
+          z: Math.PI / 2,
+          onComplete: () => {
+            setTimeout(() => {
+              gsap.to(boxingBag.rotation,{
+                duration: 0.2, 
+                z: Math.PI,
+              })
+            }, 5000)
+            pointerDisable = false;
           }
+        })
+
+      screenmode = false;
+    }
+    
+    } else if (screenmode) {
+      pointerDisable = false;
+      const intersects = raycaster.intersectObjects( helpers, false );
+      if (intersects.length > 0) {
+        const intersect = intersects[ 0 ];
+        if (intersect.object.name.includes("Back")) {
+          screenmode = false;
+          screenAboutMode = false;
+          pointerDisable = true;
+          screenAboutme.material.map = screensAbout[0];
+          moveit();
+        }
+        else if (intersect.object.name == 'projectVideo' || intersect.object.name == 'projectSource' || intersect.object.name.includes('com')) {
+          let current = screens[5];
+          if (intersect.object.name == 'projectSource') {
+            if (screens[current].source)
+              window.open(screens[current].source, '_blank');
+          }
+          else if (intersect.object.name == 'projectVideo') {
+            if (screens[current].VideoLink)
+              window.open(screens[current].VideoLink, '_blank');
+          }
+          else { // link to social media
+            switch (intersect.object.name) {
+              case 'aboutGitcom':
+                window.open('https://github.com/Ubantu011w', '_blank');
+                break
+              case 'aboutMailcom':
+                window.open('mailto:abdulla.ali.0098@gmail.com', '_blank');
+                break;
+              case 'aboutLinkedcom':
+                window.open('https://www.linkedin.com/in/abdulla-abu-ainin', '_blank');
+                break
+              default:
+                break;
+            }
+          } 
+            
         } 
-          
-      } 
-      else {
-        changeScreen(intersect.object.name);
+        else {
+          changeScreen(intersect.object.name);
+        }
       }
     }
-  }
+    }
   }
 }
 
@@ -582,7 +595,7 @@ function createMesh( positions, scale, x, y, z, color ) {
 
   for ( let i = 0; i < clones.length; i ++ ) {
 
-    mesh = new THREE.Points( geometry, new THREE.PointsMaterial( { size: 1, color: color } ) );
+    mesh = new THREE.Points( geometry, new THREE.PointsMaterial( { size: 0.5, color: color } ) );
     mesh.scale.x = mesh.scale.y = mesh.scale.z = scale;
     mesh.name = "AkuAku";
     objects.push(mesh);
@@ -701,7 +714,7 @@ function render() {
         data.delay = 320;
 
         const audioLoader = new THREE.AudioLoader();
-        audioLoader.load( 'models/sounds/appears.mp3', function( buffer ) {
+        audioLoader.load( 'static/sounds/appears.mp3', function( buffer ) {
         sound.setBuffer( buffer );
         sound.setVolume( 0.5 );
         sound.play();
@@ -741,7 +754,7 @@ function render() {
 function SetControlsLimit(direction) {
   switch (direction) {
     case 0: // home
-      controls.minDistance = 250;
+      controls.minDistance = 350;
       controls.maxDistance = 800;
       controls.minPolarAngle = 0;
       controls.maxPolarAngle = Math.PI / 2
@@ -769,9 +782,10 @@ function SetControlsLimit(direction) {
     default:
       break;
   }
+  pointerDisable = false;
 }
 
-function moveit() {
+function moveit() { // home
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   controls.enabled = false;
