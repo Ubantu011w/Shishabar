@@ -13,11 +13,14 @@ let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
 let sound;
 let pointerDisable = false;
+let button, text; // Start button
 
 const loadingManager = new THREE.LoadingManager();
 
 loadingManager.onLoad = function() {
   console.log("doneLoading");
+  button.style.visibility = 'visible';
+  text.innerHTML = 'Ready.';
 }
 
 const clock = new THREE.Clock();
@@ -57,12 +60,16 @@ let screensAbout = [
 
 init();
 animate();
-moveit();
 
 function init() {
-  const container = document.createElement( 'div' );
-  document.body.appendChild( container );
+  const container = document.createElement( 'div' ); // outer
+  const ButtonContainer = document.createElement( 'div' );
+  const SceneContainer = document.createElement( 'div' );
+  text = document.createElement( 'p' );
   
+  ButtonContainer.className = "innerButton";
+  SceneContainer.className = "inner";
+
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
   const listener = new THREE.AudioListener();
   camera.add( listener );
@@ -70,6 +77,29 @@ function init() {
 
   camera.position.set( 182, 40, 0 );
   scene = new THREE.Scene();
+  scene.visible = false;
+  button = document.createElement( 'button' );
+  button.innerHTML = "Click here to start";
+  button.addEventListener ("click", function() {
+    text.remove();
+    button.remove();
+    ButtonContainer.style.opacity = 0;
+    scene.visible = true;
+    moveit();
+  });
+
+  ButtonContainer.addEventListener("transitionend", (event) => {
+    if (event.target == ButtonContainer)
+      ButtonContainer.remove();
+  });
+
+  text.innerHTML = "Loading...";
+  button.setAttribute('class', "Start");
+  ButtonContainer.appendChild(text);
+  ButtonContainer.appendChild(button);
+
+  document.body.appendChild( container );
+
   scene.background = new THREE.Color( 0x000000 );
   const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
   hemiLight.position.set( 0, 200, 0 );
@@ -201,7 +231,7 @@ function init() {
           child.material = material;
         } 
     
-        else if (child.name == "aquiriumGlass" || child.name == "beerGlass") {
+        else if (child.name == "aquiriumGlass" || child.name == "beerGlass" || child.name == "cocktail") {
           material = new THREE.MeshPhysicalMaterial({ // material for water balloon
             roughness: 0.110,
             clearcoat: 1,
@@ -301,7 +331,9 @@ function init() {
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
-  container.appendChild( renderer.domElement );
+  SceneContainer.appendChild( renderer.domElement );
+  container.append(SceneContainer);
+  container.append(ButtonContainer);
 
   controls = new OrbitControls( camera, renderer.domElement );
   controls.update();
