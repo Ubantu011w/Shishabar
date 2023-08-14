@@ -850,7 +850,7 @@ function moveToProjects(duration) {
     ease: "power1.inOut",
     x: -1.27,
     y: 195,
-    z: 130, 
+    z: 110, 
     onComplete: () => SetControlsLimit(1) 
   })
 
@@ -872,8 +872,8 @@ function moveToAboutme(duration) {
   gsap.to(camera.position, { // arcade
     duration: 1.5,
     ease: "power1.inOut",
-    x: main.x - 140,
-    y: main.y + 55,
+    x: main.x - 90,
+    y: main.y + 35,
     z: main.z, // maybe adding even more offset depending on your model
     onComplete: () =>  {
       SetControlsLimit(2);
