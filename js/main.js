@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { Gradient } from './shaders/Gradient.js';
 import { Rays } from './shaders/Rays.js';
+import { Transition } from './shaders/Transition.js';
 
 import { Screen } from './Screen.js'
 
@@ -35,7 +35,7 @@ let screenAboutMode = false;
 let tween, controls, center;
 let screenProjects, screenAboutme;
 let boxingBag;
-var grad;
+var grad, rays;
 
 let meshes = [], clonemeshes = []; // aku aku
 let mesh;
@@ -49,13 +49,16 @@ let screens = [ // projects
   new Screen(path + "projectPark" + format, 'https://github.com/Ubantu011w/Parking-Radar-Application', null),
   new Screen(path + "projectSwe" + format, 'https://github.com/Ubantu011w/Swevent', 'https://youtu.be/hfwF2D-lebM'),
   new Screen(path + "projectUnity" + format, 'https://www.youtube.com/watch?v=ZhbVWzS0zP0&list=PLX3B88iPgRHsLoYeM8heYbFqIG5WB-uhV', null),
-  0
+  0 // current index
 ];
+
+
 
 let screensAbout = [
   new THREE.TextureLoader().load("static/textures/screens/aboutStart.jpg"),
   new THREE.TextureLoader().load("static/textures/screens/aboutName.jpg"),
-  new THREE.TextureLoader().load("static/textures/screens/aboutSkills.jpg")
+  new THREE.TextureLoader().load("static/textures/screens/aboutSkills.jpg"),
+  0 // current index
 ]
 
 init();
@@ -77,6 +80,8 @@ function init() {
 
   camera.position.set( 182, 40, 0 );
   scene = new THREE.Scene();
+  const axesHelper = new THREE.AxesHelper( 500 );
+  scene.add( axesHelper );
   scene.visible = false;
   button = document.createElement( 'button' );
   button.innerHTML = "Click here to start";
@@ -102,6 +107,7 @@ function init() {
 
   scene.background = new THREE.Color( 0x000000 );
   const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+  //const light = new THREE.AmbientLight( {color: 0x404040, Intensity: 1.3} );
   hemiLight.position.set( 0, 200, 0 );
   scene.add( hemiLight );
 
@@ -231,14 +237,16 @@ function init() {
           child.material = material;
         } 
     
-        else if (child.name == "aquiriumGlass" || child.name == "beerGlass" || child.name == "cocktail") {
+        else if (child.name == "beerGlass" || child.name == "cocktail") {
           material = new THREE.MeshPhysicalMaterial({ // material for water balloon
             roughness: 0.110,
             clearcoat: 1,
             transmission: 1,
           })
           child.material = material;
-      }
+      } 
+
+
 
       else if (child.name == "textShisha") {
         material = new THREE.MeshStandardMaterial({color: 0x000000, emissive: 0xFF0000, emissiveIntensity: 5});
@@ -259,20 +267,23 @@ function init() {
       }
 
       else if (child.name == "screenAboutme") {
-        material = new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          map: textureLoader.load( '/static/textures/screens/aboutStart.jpg' ),
-        })
-          child.material = material;
-          screenAboutme = child;
+        // material = new THREE.MeshBasicMaterial({
+        //   color: 0xffffff,
+        //   map: textureLoader.load( '/static/textures/screens/aboutStart.jpg' ),
+        // })
+          //child.material = material;
+          //screenAboutme = child;
+          screenAboutme = new Transition(child);
+          screenAboutme.setTexture1(screensAbout[0]);
+          screenAboutme.setTexture2(screensAbout[1]);
+          child.material = screenAboutme.material;
           center = new THREE.Box3().setFromObject( child );
           objects.push(child);
       }
 
       else if (child.name == "screenProjects") {
-        material = new THREE.MeshBasicMaterial({color: 0xffffff, map: textureLoader.load('/static/textures/screens/projectHotel.jpg')});
-        child.material = material;
-        screenProjects = child;
+        screenProjects = new Transition(child);
+        screenProjects.setTexture1(screens[0].texture);
       }
       
       else if (child.parent.name == "helpers") { // helpers are buttons we turn invisible
@@ -281,10 +292,18 @@ function init() {
       }
 
       else if (child.name == "hologram") {
-        if (grad)
+        if (rays)
           child.material = grad.material
         else {
           grad = new Gradient(child)
+        }
+      }
+
+      else if (child.name == "aquiriumGlass") {
+        if (rays)
+        child.material = rays.material
+        else {
+          rays = new Rays(child)
         }
       }
 
@@ -303,7 +322,7 @@ function init() {
           map: textureLoader.load( '/static/textures/arcadePackDiffuseMap.jpg' ),
         })
           child.material = material;
-          screenAboutme = child;
+          //screenAboutme = child;
       }
 
       else if (child.name == "boxingScreen2") {
@@ -322,6 +341,20 @@ function init() {
           child.material = material;
       }
 
+      else if (child.name == "fans" || child.name == "fans2") {
+        material = new THREE.MeshPhongMaterial({
+          color: 0x808080,
+          shininess: 100,
+          specular: 0xffffff
+        })
+
+          let light = new THREE.PointLight({color: 0xFF0000, Intensity: 0.1});
+          //light.position.set(child.position.getX, child.position.getY, child.position.getZ + 20)
+          light.position.setZ(300);
+          //scene.add(light);
+          
+          child.material = material;
+      }
     }
   
   });
@@ -358,17 +391,36 @@ function init() {
 
     object.traverse( function ( child ) {
       mixerFish = new THREE.AnimationMixer( object );
+      mixerFish.timeScale = 0.2;
       const action = mixerFish.clipAction( object.animations[ 0 ] );
       action.play();
 
-        const material = new THREE.MeshBasicMaterial({
-              map: new THREE.TextureLoader().load("static/textures/fishDiffuseMap.jpg")
+        const material = new THREE.MeshStandardMaterial({
+              map: new THREE.TextureLoader().load("static/textures/fishDiffuseMap.jpg"),
+              flatShading: false
             });
         child.material = material;
 
     });
     scene.add(object);
   });
+
+  // var ktx2Loader = new THREE.KTX2Loader();
+  // ktx2Loader.setTranscoderPath( 'static/textures/screens/results' );
+  // ktx2Loader.detectSupport( renderer );
+  // ktx2Loader.load( 'projectHotel.ktx2', function ( texture ) {
+
+  //   var material = new THREE.MeshStandardMaterial( { map: texture } );
+
+  // }, function () {
+
+  //   console.log( 'onProgress' );
+
+  // }, function ( e ) {
+
+  //   console.error( e );
+
+  // } );
 }
 var destroyAku = false;
 
@@ -457,7 +509,7 @@ function onPointerDown( event ) {
           screenmode = false;
           screenAboutMode = false;
           pointerDisable = true;
-          screenAboutme.material.map = screensAbout[0];
+          transitionAbout(0);
           moveit();
         }
         else if (intersect.object.name == 'projectVideo' || intersect.object.name == 'projectSource' || intersect.object.name.includes('com')) {
@@ -518,7 +570,17 @@ function changeScreen(name) {
       default:
       break;
     }
-    screenProjects.material = new THREE.MeshBasicMaterial({map: screens[i].texture})
+    screenProjects.setTexture1(screens[screens[5]].texture);
+    screenProjects.setTexture2(screens[i].texture);
+
+    gsap.to(screenProjects.material.uniforms.progress, {value:1,
+      duration: 0.5,
+      ease: "none",
+      onComplete: () => {
+        screenProjects.material.uniforms.texture1.value = screens[i].texture
+        screenProjects.material.uniforms.progress.value = 0
+      }
+  })
     screens[5] = i;
   }
 
@@ -526,13 +588,16 @@ function changeScreen(name) {
     switch (name) {
       case "aboutStart":
         if (!screenAboutMode) {
-          screenAboutme.material.map = screensAbout[1];
+          screensAbout[3] = 0;
+          transitionAbout(1);
           screenAboutMode = true;
         }
         break;
       case "aboutNext":
-        if (screenAboutMode)
-        screenAboutme.material.map = screensAbout[2]
+        if (screenAboutMode) {
+          screensAbout[3] = 1;
+          transitionAbout(2);
+        }
         break;
       default:
         break;
@@ -561,6 +626,8 @@ function animate() {
   renderer.render( scene, camera );
   if (grad)
     grad.updateGlobal();
+  if (rays)
+    rays.updateGlobal();
   if (mesh)
     render()
 
@@ -895,4 +962,18 @@ function moveToCredits(duration) {
       SetControlsLimit(0)
     }
   })
+}
+
+function transitionAbout(i) {
+  screenAboutme.setTexture1(screensAbout[screensAbout[3]]);
+  screenAboutme.setTexture2(screensAbout[i]);
+  screensAbout[3] = i;
+  gsap.to(screenAboutme.material.uniforms.progress, {value:1,
+    duration: 0.5,
+    ease: "none",
+    onComplete: () => {
+      screenAboutme.material.uniforms.texture1.value = screensAbout[i]
+      screenAboutme.material.uniforms.progress.value = 0
+    }
+})
 }
