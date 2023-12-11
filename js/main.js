@@ -80,8 +80,8 @@ function init() {
 
   camera.position.set( 182, 40, 0 );
   scene = new THREE.Scene();
-  const axesHelper = new THREE.AxesHelper( 500 );
-  scene.add( axesHelper );
+  // const axesHelper = new THREE.AxesHelper( 500 );
+  // scene.add( axesHelper );
   scene.visible = false;
   button = document.createElement( 'button' );
   button.innerHTML = "Click here to start";
