@@ -2,9 +2,9 @@ import * as THREE from 'three';
 
 export class Screen {
 
-  constructor(path, sourceLink, VideoLink) {
+  constructor(texture, sourceLink, VideoLink) {
 
-    this.texture = new THREE.TextureLoader().load(path);
+    this.texture = texture;
     this.source = sourceLink;
     this.VideoLink = VideoLink;
     

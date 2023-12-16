@@ -17,10 +17,10 @@ let sound;
 let pointerDisable = false;
 let button, text; // Start button
 
-
-
-
+renderer = new THREE.WebGLRenderer( { antialias: true } );
 const loadingManager = new THREE.LoadingManager();
+let ktx2Loader;
+
 let akuAku;
 
 loadingManager.onLoad = function() {
@@ -30,12 +30,18 @@ loadingManager.onLoad = function() {
   //if (scene)
   akuAku = new AkuAku();
   setTimeout(() => {
-    console.log(akuAku.getMeshes().length)
+    console.log(akuAku.getMeshes().length);
     akuAku.getMeshes().forEach(element => {
       scene.add(element);
     });
   }, 300 )
 
+}
+
+function loadTexture(path) { //ktx2
+    return new Promise((resolve, reject) => {
+      ktx2Loader.load(path, resolve, undefined, reject);
+  });
 }
 
 const clock = new THREE.Clock();
@@ -52,31 +58,51 @@ let screenProjects, screenAboutme;
 let boxingBag;
 var grad, rays;
 
-const path = 'static/textures/screens/';
-const format = '.jpg';
-
-let screens = [ // projects
-	new Screen(path + "projectHotel" + format, 'https://github.com/Ubantu011w/hotelcalifornia', null),
-  new Screen(path + "projectkor" + format, null, 'https://youtu.be/i1NfbDaRyM0'),
-  new Screen(path + "projectPark" + format, 'https://github.com/Ubantu011w/Parking-Radar-Application', null),
-  new Screen(path + "projectSwe" + format, 'https://github.com/Ubantu011w/Swevent', 'https://youtu.be/hfwF2D-lebM'),
-  new Screen(path + "projectUnity" + format, 'https://www.youtube.com/watch?v=ZhbVWzS0zP0&list=PLX3B88iPgRHsLoYeM8heYbFqIG5WB-uhV', null),
-  0 // current index
-];
 
 
+let screens;
 
-let screensAbout = [
-  new THREE.TextureLoader().load("static/textures/screens/aboutStart.jpg"),
-  new THREE.TextureLoader().load("static/textures/screens/aboutName.jpg"),
-  new THREE.TextureLoader().load("static/textures/screens/aboutSkills.jpg"),
-  0 // current index
-]
+// let screensAbout = [
+//   new THREE.TextureLoader().load("static/textures/screens/aboutStart.jpg"),
+//   new THREE.TextureLoader().load("static/textures/screens/aboutName.jpg"),
+//   new THREE.TextureLoader().load("static/textures/screens/aboutSkills.jpg"),
+//   0 // current index
+// ]
+
+let screensAbout;
+// let screensAbout = [
+//   ktx2Loader.load(path + "aboutStart.ktx2"),
+//   ktx2Loader.load(path + "aboutName.ktx2"),
+//   ktx2Loader.load(path + "aboutSkills.ktx2"),
+//   0 // current index
+// ]
 
 init();
 animate();
 
-function init() {
+async function init() {
+  ktx2Loader = new KTX2Loader();
+  ktx2Loader.setTranscoderPath( 'transcoders/' );
+  ktx2Loader.detectSupport( renderer );
+  const path = 'static/textures/screens/';
+  const format = '.ktx2';
+
+  screensAbout = [
+    await loadTexture(path + "aboutStart" + format),
+    await loadTexture(path + "aboutName" + format),
+    await loadTexture(path + "aboutSkills" + format),
+    0 // current index
+  ]
+
+  screens = [
+  new Screen(await loadTexture(path + "projectHotel" + format), 'https://github.com/Ubantu011w/hotelcalifornia', null),
+  new Screen(await loadTexture(path + "projectkor" + format), null, 'https://youtu.be/i1NfbDaRyM0'),
+  new Screen(await loadTexture(path + "projectPark" + format), 'https://github.com/Ubantu011w/Parking-Radar-Application', null),
+  new Screen(await loadTexture(path + "projectSwe" + format), 'https://github.com/Ubantu011w/Swevent', 'https://youtu.be/hfwF2D-lebM'),
+  new Screen(await loadTexture(path + "projectUnity" + format), 'https://www.youtube.com/watch?v=ZhbVWzS0zP0&list=PLX3B88iPgRHsLoYeM8heYbFqIG5WB-uhV', null),
+  0 // current index
+  ]
+
   const container = document.createElement( 'div' ); // outer
   const ButtonContainer = document.createElement( 'div' );
   const SceneContainer = document.createElement( 'div' );
@@ -139,7 +165,7 @@ function init() {
     const action = mixer.clipAction( object.animations[ 0 ] );
     action.play();
 
-    object.traverse( function ( child ) {
+    object.traverse( async function ( child ) {
       
       if ( child.isMesh ) {
         if (child.name == "Plane009") {
@@ -272,29 +298,9 @@ function init() {
       }
 
       else if (child.name == "board") {
-          let ktx2Loader = new KTX2Loader();
-
-          ktx2Loader.setTranscoderPath( 'transcoders/' );
-          ktx2Loader.detectSupport( renderer );
-          ktx2Loader.load( 'static/textures/results/board.ktx2', function ( texture ) {
-            texture.flipX = true;
-
-            var material = new THREE.MeshStandardMaterial( { map: texture } );
-            child.material = material;
-
-          }, function () {
-
-            console.log( 'onProgress' );
-
-          }, function ( e ) {
-
-            console.error( e );
-
-          } );
-        // material = new THREE.MeshBasicMaterial({
-        //   color: 0xffffff,
-        //   map: textureLoader.load( '/static/textures/board.jpg' )});
-        //   child.material = material;
+          let texture = await loadTexture("static/textures/board.ktx2");
+          material = new THREE.MeshStandardMaterial( { map: texture } );
+          child.material = material;
       }
 
       else if (child.name == "screenAboutme") {
@@ -339,6 +345,11 @@ function init() {
       }
 
       else if (child.name == "boxingBag") {
+        material = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          map: textureLoader.load( '/static/textures/boxingBagDiffuseMap.png' ),
+        })
+          child.material = material;
         boxingBag = child;
         objects.push(boxingBag);
       }
@@ -373,10 +384,9 @@ function init() {
       }
 
       else if (child.name == "fans" || child.name == "fans2") {
-        material = new THREE.MeshPhongMaterial({
+        material = new THREE.MeshBasicMaterial({
           color: 0x808080,
-          shininess: 100,
-          specular: 0xffffff
+          map: textureLoader.load( '/static/textures/fansDiffuseMap.png' ),
         })
 
           let light = new THREE.PointLight({color: 0xFF0000, Intensity: 0.1});
@@ -392,7 +402,6 @@ function init() {
       scene.add( object );
   } );
 
-  renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
   SceneContainer.appendChild( renderer.domElement );
