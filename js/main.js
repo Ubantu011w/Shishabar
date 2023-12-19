@@ -6,7 +6,7 @@ import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { Gradient } from './shaders/Gradient.js';
 import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
-import { Slide } from './shaders/slide.js';
+import { Slide } from './shaders/Slide.js';
 
 
 import { Screen } from './Screen.js'
