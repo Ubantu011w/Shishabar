@@ -1,23 +1,32 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 let destroyAku = false;
+let destroying = false;
+const audioLoader = new THREE.AudioLoader();
 const listener = new THREE.AudioListener();
 let sound = new THREE.Audio( listener );
 let clonemeshes = [];
 var meshesBackup = [];
 var meshes = [];
-let loaded = false;
 
 class AkuAku {
   constructor() {
-    this.loadModel();
   }
   getMeshes() {
     return meshesBackup;
   }
 
-  isLoaded() {
-    return loaded;
+  destroy() {
+    audioLoader.load( 'static/sounds/vanish.mp3', function( buffer ) {
+    sound.setBuffer( buffer );
+    sound.setVolume( 0.5 );
+    sound.play();
+    });
+    destroyAku = true;
+  }
+
+  getdestroy() {
+    return destroyAku;
   }
 
   async loadModel() {
@@ -26,7 +35,6 @@ class AkuAku {
     const model = await loader.loadAsync('static/models/aku.fbx');
     const positions = this.combineBuffer( model, 'position' );
     this.createMesh( positions, 0.5, -26 , 198, 60, Math.random() * 0xfffffff);
-    loaded = true;
   }
   createMesh( positions, scale, x, y, z, color) {
     let mesh;
@@ -139,8 +147,7 @@ class AkuAku {
       }
   
       if (destroyAku) {
-  
-  
+        if (!destroying) 
       for ( let i = 0; i < count; i ++ ) {
   
         const px = positions.getX( i );
@@ -201,7 +208,6 @@ class AkuAku {
           data.verticesDown = 0;
           data.delay = 320;
   
-          const audioLoader = new THREE.AudioLoader();
           audioLoader.load( 'static/sounds/appears.mp3', function( buffer ) {
           sound.setBuffer( buffer );
           sound.setVolume( 0.5 );

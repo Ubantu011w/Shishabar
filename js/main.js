@@ -1,21 +1,50 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+
 import { Gradient } from './shaders/Gradient.js';
 import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
-import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { Slide } from './shaders/slide.js';
+
 
 import { Screen } from './Screen.js'
 
 import { gsap } from 'gsap';
 import { AkuAku } from './AkuAku.js';
 
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
+
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
 let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
 let sound;
 let pointerDisable = false;
 let button, text; // Start button
+let sideScreen;
+let finalComposer, bloomComposer;
+let uniforms = {
+  globalBloom: {value: 1}
+}
+const BLOOM_SCENE = 1;
+
+const bloomLayer = new THREE.Layers();
+bloomLayer.set( BLOOM_SCENE );
+
+const params = {
+  threshold: 0,
+  strength: 1,
+  radius: 0.5,
+  exposure: 1
+};
+
+const darkMaterial = new THREE.MeshBasicMaterial( { color: 'black' } );
+const materials = {};
 
 renderer = new THREE.WebGLRenderer( { antialias: true } );
 const loadingManager = new THREE.LoadingManager();
@@ -27,15 +56,6 @@ loadingManager.onLoad = function() {
   console.log("doneLoading");
   button.style.visibility = 'visible';
   text.innerHTML = 'Ready.';
-  //if (scene)
-  akuAku = new AkuAku();
-  setTimeout(() => {
-    console.log(akuAku.getMeshes().length);
-    akuAku.getMeshes().forEach(element => {
-      scene.add(element);
-    });
-  }, 300 )
-
 }
 
 function loadTexture(path) { //ktx2
@@ -58,27 +78,14 @@ let screenProjects, screenAboutme;
 let boxingBag;
 var grad, rays;
 
-
-
 let screens;
 
-// let screensAbout = [
-//   new THREE.TextureLoader().load("static/textures/screens/aboutStart.jpg"),
-//   new THREE.TextureLoader().load("static/textures/screens/aboutName.jpg"),
-//   new THREE.TextureLoader().load("static/textures/screens/aboutSkills.jpg"),
-//   0 // current index
-// ]
-
 let screensAbout;
-// let screensAbout = [
-//   ktx2Loader.load(path + "aboutStart.ktx2"),
-//   ktx2Loader.load(path + "aboutName.ktx2"),
-//   ktx2Loader.load(path + "aboutSkills.ktx2"),
-//   0 // current index
-// ]
+
+let boxingScreens;
+let sideScreenBoxing;
 
 init();
-animate();
 
 async function init() {
   ktx2Loader = new KTX2Loader();
@@ -92,6 +99,12 @@ async function init() {
     await loadTexture(path + "aboutName" + format),
     await loadTexture(path + "aboutSkills" + format),
     0 // current index
+  ]
+
+  boxingScreens = 
+  [
+    new THREE.TextureLoader().load("static/textures/boxingScreen1.jpg"),
+    new THREE.TextureLoader().load("static/textures/boxingScreen2.jpg")
   ]
 
   screens = [
@@ -194,6 +207,8 @@ async function init() {
         if (child.name == "ledRed" || child.name == "ledRoof") {
           material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
           child.material = material;
+          child.layers.enable( BLOOM_SCENE );
+
         }
 
         if (child.name == "speakerSet") {
@@ -204,10 +219,14 @@ async function init() {
         else if (child.name == "ledBlue") {
           material = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 5});
           child.material = material;
+          child.layers.enable( BLOOM_SCENE );
+
         }
         else if (child.name == "ledBar") {
           material = new THREE.MeshStandardMaterial({ color: 0x6600ff, emissive: 0x6600ff, emissiveIntensity: 2});
           child.material = material;
+          child.layers.enable( BLOOM_SCENE );
+
         }
 
         else if (child.name == "bar") {
@@ -258,21 +277,25 @@ async function init() {
         }
 
         else if (child.name == "boxingScreen") {
-          const video = document.createElement('video');
-          video.src = "/static/textures/boxingScreen.mp4";
-          video.load();
-          video.loop = true;
-          video.muted = "muted";
-          const texture = new THREE.VideoTexture(video);
-          material = new THREE.MeshLambertMaterial({map: texture});
-          child.material = material;
-          video.play();
+          // const video = document.createElement('video');
+          // video.src = "/static/textures/boxingScreen.mp4";
+          // video.load();
+          // video.loop = true;
+          // video.muted = "muted";
+          //const texture = new THREE.VideoTexture(video);
+          // material = new THREE.MeshLambertMaterial({map: texture});
+          // child.material = material;
+          // video.play();
+          sideScreenBoxing = new Slide(child);
+          child.material = sideScreenBoxing.material;
+          sideScreenBoxing.setTexture1(boxingScreens[0]);
         }
 
 
         else if (child.name == "textShishaLight" ||  child.name == "textLight1")  {
           material = new THREE.MeshStandardMaterial({emissive: 0x00FFD8, emissiveIntensity: 2});
           child.material = material;
+          
         } 
     
         else if (child.name == "beerGlass" || child.name == "cocktail") {
@@ -342,6 +365,7 @@ async function init() {
         else {
           rays = new Rays(child)
         }
+        child.layers.enable( BLOOM_SCENE );
       }
 
       else if (child.name == "boxingBag") {
@@ -402,8 +426,81 @@ async function init() {
       scene.add( object );
   } );
 
+  // bloom
+
+  finalComposer = new EffectComposer( renderer );
+
+  const renderScene = new RenderPass( scene, camera );
+  
+  finalComposer.addPass( renderScene );
+  const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0, 0.1 );
+  //bloomPass.threshold = 1;
+  bloomComposer = new EffectComposer( renderer );
+  bloomComposer.renderToScreen = false;
+  bloomComposer.addPass( renderScene );
+  bloomComposer.addPass( bloomPass );
+
+  bloomComposer.setSize( window.innerWidth, window.innerHeight );
+  finalComposer.setSize( window.innerWidth, window.innerHeight );
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
+  const finalPass = new ShaderPass(
+    new THREE.ShaderMaterial( {
+      uniforms: {
+        baseTexture: { value: null },
+        bloomTexture: { value: bloomComposer.renderTarget2.texture }
+      },
+      vertexShader: [
+        'varying vec2 vUv;',
+        'void main() {',
+          'vUv = uv;',
+          'gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+        '}'
+	].join( '\n' ),
+      fragmentShader: [
+        'uniform sampler2D baseTexture;',
+        'uniform sampler2D bloomTexture;',
+        'varying vec2 vUv;',
+        'void main() {',
+          'gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );',
+        '}'
+      ].join( '\n' ),
+      defines: {}
+    } ), "baseTexture"
+  );
+  finalPass.needsSwap = true;
+  finalComposer.addPass( finalPass );
+  const gui = new GUI();
+
+  const bloomFolder = gui.addFolder( 'bloom' );
+  
+  bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
+  
+    bloomPass.threshold = Number( value );
+  
+  } );
+  
+  bloomFolder.add( params, 'strength', 0.0, 3 ).onChange( function ( value ) {
+  
+    bloomPass.strength = Number( value );
+  
+  } );
+  
+  bloomFolder.add( params, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
+  
+    bloomPass.radius = Number( value );
+  
+  } );
+  
+  const toneMappingFolder = gui.addFolder( 'tone mapping' );
+  
+  toneMappingFolder.add( params, 'exposure', 0.1, 2 ).onChange( function ( value ) {
+  
+    renderer.toneMappingExposure = Math.pow( value, 4.0 );
+  
+  } );
+  // bloom
+
   SceneContainer.appendChild( renderer.domElement );
   container.append(SceneContainer);
   container.append(ButtonContainer);
@@ -434,28 +531,19 @@ async function init() {
 
     });
     scene.add(object);
+
   });
-
-  // var ktx2Loader = new THREE.KTX2Loader();
-  // ktx2Loader.setTranscoderPath( 'static/textures/screens/results' );
-  // ktx2Loader.detectSupport( renderer );
-  // ktx2Loader.load( 'projectHotel.ktx2', function ( texture ) {
-
-  //   var material = new THREE.MeshStandardMaterial( { map: texture } );
-
-  // }, function () {
-
-  //   console.log( 'onProgress' );
-
-  // }, function ( e ) {
-
-  //   console.error( e );
-
-  // } );
+  akuAku = new AkuAku();
+  await akuAku.loadModel();
+  akuAku.getMeshes().forEach(element => {
+    element.name = "AkuAku";
+    objects.push(element);
+    scene.add(element);
+  });
+  sideScreen = 1;
+  changeSideScreen()
+  animate();
 }
-var destroyAku = false;
-
-
 
 function onPointerMove( event ) {
 
@@ -503,13 +591,8 @@ function onPointerDown( event ) {
 
     if (intersect.object.name == "AkuAku") {
       pointerDisable = false;
-      destroyAku = true;
-      const audioLoader = new THREE.AudioLoader();
-      audioLoader.load( 'static/sounds/vanish.mp3', function( buffer ) {
-      sound.setBuffer( buffer );
-      sound.setVolume( 0.5 );
-      sound.play();
-      });
+      akuAku.destroy();
+
       screenmode = false;
     }
 
@@ -659,7 +742,14 @@ function animate() {
     grad.updateGlobal();
   if (rays)
     rays.updateGlobal();
-  if (akuAku) if (akuAku.isLoaded()) akuAku.render(10 * clock.getDelta());
+  if (akuAku) 
+    akuAku.render(10 * clock.getDelta());
+  scene.traverse( darkenNonBloomed );
+  bloomComposer.render();
+  scene.traverse( restoreMaterial );
+
+  // render the entire scene, then render bloom scene on top
+  finalComposer.render();
 
 }
 
@@ -789,4 +879,65 @@ function transitionAbout(i) {
       screenAboutme.material.uniforms.progress.value = 0
     }
   });
+} 
+
+function changeSideScreen()
+    {
+    if (sideScreenBoxing) {
+        switch(sideScreen) {
+            case 1:
+                slideTransition(
+                  sideScreenBoxing.material,
+                    boxingScreens[1],
+                    7
+                )
+                sideScreen +=1
+                break
+            case 2:
+                slideTransition(
+                  sideScreenBoxing  .material,
+                    boxingScreens[0],
+                    7
+                )
+                sideScreen = 1
+                break
+        }
+
+      }
+    }
+
+function slideTransition(material, newTexture, duration) // boxing screen
+{
+    material.uniforms.texture2.value = newTexture
+    gsap.to(material.uniforms.progress, {value:1,
+        duration: duration,
+        ease: "none",
+        onComplete: () => {
+            material.uniforms.texture1.value = newTexture
+            material.uniforms.progress.value = 0
+            changeSideScreen()
+        }
+    })
+}
+
+function darkenNonBloomed( obj ) {
+
+  if ( obj.isMesh && bloomLayer.test( obj.layers ) === false ) {
+
+    materials[ obj.uuid ] = obj.material;
+    obj.material = darkMaterial;
+
+  }
+
+}
+
+function restoreMaterial( obj ) {
+
+  if ( materials[ obj.uuid ] ) {
+
+    obj.material = materials[ obj.uuid ];
+    delete materials[ obj.uuid ];
+
+  }
+
 }
