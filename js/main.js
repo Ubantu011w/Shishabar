@@ -21,6 +21,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
+let debugMode = false;
 let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
 let sound;
@@ -37,8 +38,8 @@ const bloomLayer = new THREE.Layers();
 bloomLayer.set( BLOOM_SCENE );
 
 const params = {
-  threshold: 0,
-  strength: 1,
+  threshold: 0.013,
+  strength: 2.6,
   radius: 0.5,
   exposure: 1
 };
@@ -56,6 +57,7 @@ loadingManager.onLoad = function() {
   console.log("doneLoading");
   button.style.visibility = 'visible';
   text.innerHTML = 'Ready.';
+  changeSideScreen()
 }
 
 function loadTexture(path) { //ktx2
@@ -103,8 +105,8 @@ async function init() {
 
   boxingScreens = 
   [
-    new THREE.TextureLoader().load("static/textures/boxingScreen1.jpg"),
-    new THREE.TextureLoader().load("static/textures/boxingScreen2.jpg")
+  await loadTexture(path + "boxingScreen1.ktx2"),
+  await loadTexture(path + "boxingScreen2.ktx2"),
   ]
 
   screens = [
@@ -297,6 +299,11 @@ async function init() {
           child.material = material;
           
         } 
+        else if (child.name == "leftBulb" ||  child.name == "rightBulb")  {
+          material = new THREE.MeshStandardMaterial({color: 0xfff1ab, emissive: 0xfff1ab, emissiveIntensity: 0.1});
+          child.material = material;
+          child.layers.enable( BLOOM_SCENE );
+        }
     
         else if (child.name == "beerGlass" || child.name == "cocktail") {
           material = new THREE.MeshPhysicalMaterial({ // material for water balloon
@@ -470,8 +477,10 @@ async function init() {
   );
   finalPass.needsSwap = true;
   finalComposer.addPass( finalPass );
+  
+  if (debugMode) {
   const gui = new GUI();
-
+  
   const bloomFolder = gui.addFolder( 'bloom' );
   
   bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
@@ -500,7 +509,7 @@ async function init() {
   
   } );
   // bloom
-
+}
   SceneContainer.appendChild( renderer.domElement );
   container.append(SceneContainer);
   container.append(ButtonContainer);
@@ -522,12 +531,20 @@ async function init() {
       mixerFish.timeScale = 0.2;
       const action = mixerFish.clipAction( object.animations[ 0 ] );
       action.play();
+        if (child.name == "fishBulb") {
+          const material = new THREE.MeshStandardMaterial({color: 0xebcf34, emissive: 0xebcf34, emissiveIntensity: 0.5});
+          child.material = material;
+          child.layers.enable(BLOOM_SCENE);
 
-        const material = new THREE.MeshStandardMaterial({
-              map: new THREE.TextureLoader().load("static/textures/fishDiffuseMap.jpg"),
-              flatShading: false
-            });
+        } else if (child.name == "fish") {
+          const material = new THREE.MeshStandardMaterial({
+            map: new THREE.TextureLoader().load("static/textures/fishDiffuseMap.jpg"),
+            flatShading: false
+          });
         child.material = material;
+
+        } else {
+        }
 
     });
     scene.add(object);
@@ -541,7 +558,6 @@ async function init() {
     scene.add(element);
   });
   sideScreen = 1;
-  changeSideScreen()
   animate();
 }
 
@@ -727,7 +743,8 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize( window.innerWidth, window.innerHeight );
-
+  bloomComposer.setSize( window.innerWidth, window.innerHeight );
+  finalComposer.setSize( window.innerWidth, window.innerHeight );
 }
 
 //

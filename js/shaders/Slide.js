@@ -62,7 +62,7 @@ Slide.Shader = {
     "varying vec2 vUv;",
 
     "void main() {",
-   " vec2 p = vUv + progress * vec2(0, 1.0);",
+   " vec2 p = vUv + progress * vec2(0, -1.0);",
    " vec2 f = fract(p);",
   
     "vec4 t1 = texture2D(texture1,f);",
