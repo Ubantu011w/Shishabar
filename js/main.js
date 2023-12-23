@@ -8,6 +8,9 @@ import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
 import { Slide } from './shaders/Slide.js';
 
+//smoothStep
+import vertex from './shaders/Visual/vertex.glsl?raw'
+import fragment from './shaders/Visual/fragment.glsl?raw'
 
 import { Screen } from './Screen.js'
 
@@ -18,6 +21,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
@@ -29,25 +33,24 @@ let pointerDisable = false;
 let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer;
-let uniforms = {
-  globalBloom: {value: 1}
-}
+let visual, analyser, visualizer;
+
 const BLOOM_SCENE = 1;
 
 const bloomLayer = new THREE.Layers();
 bloomLayer.set( BLOOM_SCENE );
 
 const params = {
-  threshold: 0.013,
-  strength: 2.6,
-  radius: 0.5,
+  threshold: 0,
+  strength: 0.55,
+  radius: 0.42,
   exposure: 1
 };
 
 const darkMaterial = new THREE.MeshBasicMaterial( { color: 'black' } );
 const materials = {};
 
-renderer = new THREE.WebGLRenderer( { antialias: true } );
+renderer = new THREE.WebGLRenderer( { antialias: false } );
 const loadingManager = new THREE.LoadingManager();
 let ktx2Loader;
 
@@ -127,7 +130,7 @@ async function init() {
   SceneContainer.className = "inner";
 
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-  const listener = new THREE.AudioListener();
+  let listener = new THREE.AudioListener();
   camera.add( listener );
   sound = new THREE.Audio( listener );
 
@@ -144,6 +147,7 @@ async function init() {
     ButtonContainer.style.opacity = 0;
     scene.visible = true;
     moveit();
+    visualizer.load('static/sounds/Disco.mp3');
   });
 
   ButtonContainer.addEventListener("transitionend", (event) => {
@@ -189,7 +193,6 @@ async function init() {
                 map: textureLoader.load( '/static/textures/Plane009DiffuseMap.jpg' ),
               });
               
-
 /*               let geometry = new THREE.PlaneGeometry( 80, 80 );
               groundMirror = new Reflector( geometry, {
                 map: textureLoader.load( '/static/textures/Plane009DiffuseMap.jpg' ),
@@ -202,7 +205,6 @@ async function init() {
               scene.add( groundMirror ); */
 
             child.material = material;
-
         }
 
         let material; 
@@ -219,13 +221,13 @@ async function init() {
         }
 
         else if (child.name == "ledBlue") {
-          material = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 5});
+          material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 4});
           child.material = material;
           child.layers.enable( BLOOM_SCENE );
 
         }
         else if (child.name == "ledBar") {
-          material = new THREE.MeshStandardMaterial({ color: 0x6600ff, emissive: 0x6600ff, emissiveIntensity: 2});
+          material = new THREE.MeshStandardMaterial({ color: 0x6600ff, emissive: 0x6600ff, emissiveIntensity: 4});
           child.material = material;
           child.layers.enable( BLOOM_SCENE );
 
@@ -426,6 +428,22 @@ async function init() {
           //scene.add(light);
           
           child.material = material;
+      } else if (child.name == "audioScreen") {
+        //visual = new Visual(child);
+        visual = new THREE.ShaderMaterial( {
+            uniforms: {iGlobalTime:    { value: 0.1 }},
+            vertexShader: vertex,
+            fragmentShader: fragment
+          }
+        )
+        child.material = visual;
+        visualizer = new Visualizer(child, 'uAudioFrequency');
+        child.layers.enable(BLOOM_SCENE);
+          
+        // const geometry = new THREE.SphereGeometry( 15, 32, 16 ); 
+        // const sphere = new THREE.Mesh( geometry, visual ); scene.add( sphere );
+        // scene.add(sphere);
+        // sphere.position.set(0,100,-200);
       }
     }
   
@@ -476,6 +494,8 @@ async function init() {
     } ), "baseTexture"
   );
   finalPass.needsSwap = true;
+  const smaaPass = new SMAAPass()
+  finalComposer.addPass( smaaPass );
   finalComposer.addPass( finalPass );
   
   if (debugMode) {
@@ -510,6 +530,11 @@ async function init() {
   } );
   // bloom
 }
+  bloomPass.threshold = Number( params.threshold );
+  bloomPass.strength = Number( params.strength );
+  bloomPass.radius = Number( params.radius );
+  renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
+
   SceneContainer.appendChild( renderer.domElement );
   container.append(SceneContainer);
   container.append(ButtonContainer);
@@ -613,6 +638,7 @@ function onPointerDown( event ) {
     }
 
     else if (intersect.object == boxingBag) {
+      
       gsap.to(boxingBag.rotation,{
           duration: 0.3, 
           z: Math.PI / 2,
@@ -635,6 +661,7 @@ function onPointerDown( event ) {
       const intersects = raycaster.intersectObjects( helpers, false );
       if (intersects.length > 0) {
         const intersect = intersects[ 0 ];
+        playSound('click')
         if (intersect.object.name.includes("Back")) {
           screenmode = false;
           screenAboutMode = false;
@@ -768,6 +795,16 @@ function animate() {
   // render the entire scene, then render bloom scene on top
   finalComposer.render();
 
+  //let analysis = analyser.getFrequencyData()[2] / 255;
+
+  //console.log(analysis);
+
+  // visual 
+  if (visual) {
+    visual.uniforms.iGlobalTime.value = clock.getElapsedTime();
+    visualizer.update();
+  }
+
 }
 
 function SetControlsLimit(direction) {
@@ -805,6 +842,7 @@ function SetControlsLimit(direction) {
 }
 
 function moveit() { // home
+  playSound('whoosh')
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   controls.enabled = false;
@@ -829,6 +867,7 @@ function moveit() { // home
 }
 
 function moveToProjects(duration) {
+  playSound('whoosh');
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   controls.enabled = false;
@@ -851,6 +890,7 @@ function moveToProjects(duration) {
 }
 
 function moveToAboutme(duration) {
+  playSound('whoosh');
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   var main = center.getCenter( new THREE.Vector3() );
@@ -869,6 +909,7 @@ function moveToAboutme(duration) {
 }
 
 function moveToCredits(duration) {
+  playSound('whoosh');
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   screenmode = false;
@@ -957,4 +998,48 @@ function restoreMaterial( obj ) {
 
   }
 
+}
+
+class Visualizer {
+  constructor(mesh, frequencyUniformName) {
+    this.mesh = mesh;
+    this.frequencyUniformName = frequencyUniformName;
+    this.mesh.material.uniforms[this.frequencyUniformName] = {value: 0};
+
+    this.listener = new THREE.AudioListener();
+    this.mesh.add(this.listener);
+
+    this.sound = new THREE.Audio(this.listener);
+    this.loader = new THREE.AudioLoader();
+
+    this.analyser = new THREE.AudioAnalyser(this.sound, 32)
+  }
+  
+  load(path) {
+    this.loader.load(path, (buffer) => {
+      this.sound.setBuffer(buffer);
+      this.sound.setLoop(true);
+      this.sound.setVolume(0.5);
+      this.sound.play();
+    })
+  }
+
+  getFrequency() {
+    return this.analyser.getAverageFrequency()
+  }
+
+  update() {
+    const freq = Math.max(this.getFrequency() - 100, 0) / 50 // disregarding anything bellow 100 because dont matter
+    this.mesh.material.uniforms[this.frequencyUniformName].value = freq;
+  }
+
+}
+
+function playSound(name) {
+  const audioLoader = new THREE.AudioLoader();
+  audioLoader.load( 'static/sounds/'+ name +'.mp3', function( buffer ) {
+    sound.setBuffer( buffer );
+    sound.setVolume( 0.5 );
+    sound.play();
+    });
 }
