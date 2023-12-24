@@ -51,8 +51,8 @@ void main()
 	vec2 ratio = vUv.xy / min( vUv.x, vUv.y );
 	//vec2 uv = ( gl_FragColor.xy * 2.0 - vUv.xy ) / min( vUv.x, vUv.y );
 	vec2 uv = -1.0 + 2.0 * vUv;
-	uv.x = vUv.y;
-	uv.y = vUv.x;
+	// uv.x = vUv.y;
+	// uv.y = vUv.x;
 	// --- Kaleidoscope ---
 	uv = mix( uv, Kaleidoscope( uv, NUM_SIDES, iGlobalTime*10. ), USE_KALEIDOSCOPE ); 
 	
