@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 export class Screen {
 
   constructor(texture, sourceLink, VideoLink) {

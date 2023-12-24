@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { gsap } from 'gsap';
 
 import { Gradient } from './shaders/Gradient.js';
 import { Rays } from './shaders/Rays.js';
@@ -9,13 +10,14 @@ import { Transition } from './shaders/Transition.js';
 import { Slide } from './shaders/Slide.js';
 
 //smoothStep
-import vertex from './shaders/Visual/vertex.glsl?raw'
-import fragment from './shaders/Visual/fragment.glsl?raw'
+import vertex from './shaders/KaleidoscopeAudio/vertex.glsl?raw'
+import fragment from './shaders/KaleidoscopeAudio/fragment.glsl?raw'
 
 import { Screen } from './Screen.js'
-
-import { gsap } from 'gsap';
 import { AkuAku } from './AkuAku.js';
+import { Sound } from './Sound.js';
+import { Visualizer } from './Visualizer.js';
+import mix from '../sounds/mix.mp3';
 
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -34,6 +36,8 @@ let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer;
 let visual, analyser, visualizer;
+
+let sounds = new Sound();
 
 const BLOOM_SCENE = 1;
 
@@ -147,7 +151,7 @@ async function init() {
     ButtonContainer.style.opacity = 0;
     scene.visible = true;
     moveit();
-    visualizer.load('static/sounds/Disco.mp3');
+    visualizer.load(mix);
   });
 
   ButtonContainer.addEventListener("transitionend", (event) => {
@@ -254,7 +258,7 @@ async function init() {
         }
 
         else if (child.name == "textProjects" || child.name == "textAbout" || child.name == "textCredits") {
-          material = new THREE.MeshBasicMaterial({ color: 0x0000ff});
+          material = new THREE.MeshBasicMaterial({ color: 0x420d00});
           child.material = material;
         }
 
@@ -431,19 +435,24 @@ async function init() {
       } else if (child.name == "audioScreen") {
         //visual = new Visual(child);
         visual = new THREE.ShaderMaterial( {
-            uniforms: {iGlobalTime:    { value: 0.1 }},
+            uniforms: {
+              iGlobalTime:    { value: 0.1 },
+              uAudioFrequency: { value: 0.1 },
+              texture1: { value: textureLoader.load( '/static/textures/noise.png' ) }
+          },
             vertexShader: vertex,
             fragmentShader: fragment
           }
         )
         child.material = visual;
-        visualizer = new Visualizer(child, 'uAudioFrequency');
+        visualizer = new Visualizer(child);
         child.layers.enable(BLOOM_SCENE);
           
-        // const geometry = new THREE.SphereGeometry( 15, 32, 16 ); 
+        // const geometry = new THREE.PlaneGeometry( 32, 32 ); 
         // const sphere = new THREE.Mesh( geometry, visual ); scene.add( sphere );
         // scene.add(sphere);
         // sphere.position.set(0,100,-200);
+        // sphere.rotateX(180);
       }
     }
   
@@ -638,7 +647,7 @@ function onPointerDown( event ) {
     }
 
     else if (intersect.object == boxingBag) {
-      
+      sounds.playPunch();
       gsap.to(boxingBag.rotation,{
           duration: 0.3, 
           z: Math.PI / 2,
@@ -661,7 +670,7 @@ function onPointerDown( event ) {
       const intersects = raycaster.intersectObjects( helpers, false );
       if (intersects.length > 0) {
         const intersect = intersects[ 0 ];
-        playSound('click')
+        sounds.playBloop();
         if (intersect.object.name.includes("Back")) {
           screenmode = false;
           screenAboutMode = false;
@@ -842,7 +851,7 @@ function SetControlsLimit(direction) {
 }
 
 function moveit() { // home
-  playSound('whoosh')
+  sounds.playWhoosh();
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   controls.enabled = false;
@@ -867,7 +876,8 @@ function moveit() { // home
 }
 
 function moveToProjects(duration) {
-  playSound('whoosh');
+  sounds.playClick();
+  sounds.playWhoosh();
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   controls.enabled = false;
@@ -890,7 +900,8 @@ function moveToProjects(duration) {
 }
 
 function moveToAboutme(duration) {
-  playSound('whoosh');
+  sounds.playClick();
+  sounds.playWhoosh();
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   var main = center.getCenter( new THREE.Vector3() );
@@ -909,7 +920,8 @@ function moveToAboutme(duration) {
 }
 
 function moveToCredits(duration) {
-  playSound('whoosh');
+  sounds.playClick();
+  sounds.playWhoosh();
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   screenmode = false;
@@ -998,48 +1010,4 @@ function restoreMaterial( obj ) {
 
   }
 
-}
-
-class Visualizer {
-  constructor(mesh, frequencyUniformName) {
-    this.mesh = mesh;
-    this.frequencyUniformName = frequencyUniformName;
-    this.mesh.material.uniforms[this.frequencyUniformName] = {value: 0};
-
-    this.listener = new THREE.AudioListener();
-    this.mesh.add(this.listener);
-
-    this.sound = new THREE.Audio(this.listener);
-    this.loader = new THREE.AudioLoader();
-
-    this.analyser = new THREE.AudioAnalyser(this.sound, 32)
-  }
-  
-  load(path) {
-    this.loader.load(path, (buffer) => {
-      this.sound.setBuffer(buffer);
-      this.sound.setLoop(true);
-      this.sound.setVolume(0.5);
-      this.sound.play();
-    })
-  }
-
-  getFrequency() {
-    return this.analyser.getAverageFrequency()
-  }
-
-  update() {
-    const freq = Math.max(this.getFrequency() - 100, 0) / 50 // disregarding anything bellow 100 because dont matter
-    this.mesh.material.uniforms[this.frequencyUniformName].value = freq;
-  }
-
-}
-
-function playSound(name) {
-  const audioLoader = new THREE.AudioLoader();
-  audioLoader.load( 'static/sounds/'+ name +'.mp3', function( buffer ) {
-    sound.setBuffer( buffer );
-    sound.setVolume( 0.5 );
-    sound.play();
-    });
 }

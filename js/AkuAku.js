@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { Sound } from './Sound.js';
+
 let destroyAku = false;
 let destroying = false;
-const audioLoader = new THREE.AudioLoader();
-const listener = new THREE.AudioListener();
-let sound = new THREE.Audio( listener );
+let Sounds = new Sound();
 let clonemeshes = [];
 var meshesBackup = [];
 var meshes = [];
@@ -17,11 +17,7 @@ class AkuAku {
   }
 
   destroy() {
-    audioLoader.load( 'static/sounds/vanish.mp3', function( buffer ) {
-    sound.setBuffer( buffer );
-    sound.setVolume( 0.5 );
-    sound.play();
-    });
+    Sounds.playVanish();
     destroyAku = true;
   }
 
@@ -208,11 +204,7 @@ class AkuAku {
           data.verticesDown = 0;
           data.delay = 320;
   
-          audioLoader.load( 'static/sounds/appears.mp3', function( buffer ) {
-          sound.setBuffer( buffer );
-          sound.setVolume( 0.5 );
-          sound.play();
-          });
+          Sounds.playAppear();
           
         } else {
   
