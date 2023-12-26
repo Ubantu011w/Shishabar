@@ -9,9 +9,12 @@ import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
 import { Slide } from './shaders/Slide.js';
 
-//smoothStep
-import vertex from './shaders/KaleidoscopeAudio/vertex.glsl?raw'
-import fragment from './shaders/KaleidoscopeAudio/fragment.glsl?raw'
+//visualizer
+import vertex from './shaders/basicVisualizer/vertex.glsl?raw'
+import fragment from './shaders/basicVisualizer/fragment.glsl?raw'
+//trippy
+import vertexTrip from './shaders/firstTry/vertex.glsl?raw'
+import fragmentTrip from './shaders/firstTry/fragment.glsl?raw'
 
 import { Screen } from './Screen.js'
 import { AkuAku } from './AkuAku.js';
@@ -30,12 +33,11 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 let debugMode = false;
 let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
-let sound;
 let pointerDisable = false;
 let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer;
-let visual, analyser, visualizer;
+let visualMaterial, visualizer, tripMaterial;
 
 let sounds = new Sound();
 
@@ -60,12 +62,7 @@ let ktx2Loader;
 
 let akuAku;
 
-loadingManager.onLoad = function() {
-  console.log("doneLoading");
-  button.style.visibility = 'visible';
-  text.innerHTML = 'Ready.';
-  changeSideScreen()
-}
+
 
 function loadTexture(path) { //ktx2
     return new Promise((resolve, reject) => {
@@ -134,37 +131,13 @@ async function init() {
   SceneContainer.className = "inner";
 
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-  let listener = new THREE.AudioListener();
-  camera.add( listener );
-  sound = new THREE.Audio( listener );
 
   camera.position.set( 182, 40, 0 );
   scene = new THREE.Scene();
   // const axesHelper = new THREE.AxesHelper( 500 );
   // scene.add( axesHelper );
   scene.visible = false;
-  button = document.createElement( 'button' );
-  button.innerHTML = "Click here to start";
-  button.addEventListener ("click", function() {
-    text.remove();
-    button.remove();
-    ButtonContainer.style.opacity = 0;
-    scene.visible = true;
-    moveit();
-    visualizer.load(mix);
-  });
 
-  ButtonContainer.addEventListener("transitionend", (event) => {
-    if (event.target == ButtonContainer)
-      ButtonContainer.remove();
-  });
-
-  text.innerHTML = "Loading...";
-  button.setAttribute('class', "Start");
-  ButtonContainer.appendChild(text);
-  ButtonContainer.appendChild(button);
-
-  document.body.appendChild( container );
 
   scene.background = new THREE.Color( 0x000000 );
   const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -434,25 +407,39 @@ async function init() {
           child.material = material;
       } else if (child.name == "audioScreen") {
         //visual = new Visual(child);
-        visual = new THREE.ShaderMaterial( {
+        visualMaterial = new THREE.ShaderMaterial( {
+          side: THREE.DoubleSide,
+          transparent: true,
             uniforms: {
               iGlobalTime:    { value: 0.1 },
               uAudioFrequency: { value: 0.1 },
-              texture1: { value: textureLoader.load( '/static/textures/noise.png' ) }
+              texture1: { value: textureLoader.load( '/static/textures/characters.png' ) },
+              u_resolution : {type: 'v2', value : new THREE.Vector2(108, 108)},
+              spectrum: {type: 'sampler2D', value: null}
           },
             vertexShader: vertex,
             fragmentShader: fragment
           }
         )
-        child.material = visual;
+        child.material = visualMaterial;
         visualizer = new Visualizer(child);
-        child.layers.enable(BLOOM_SCENE);
+    //child.layers.enable(BLOOM_SCENE);
           
-        // const geometry = new THREE.PlaneGeometry( 32, 32 ); 
-        // const sphere = new THREE.Mesh( geometry, visual ); scene.add( sphere );
+        // const geometry = new THREE.PlaneGeometry( 108, 108 ); 
+        // const sphere = new THREE.Mesh( geometry, visualMaterial ); scene.add( sphere );
         // scene.add(sphere);
-        // sphere.position.set(0,100,-200);
-        // sphere.rotateX(180);
+        // sphere.position.set(0,130,-200);
+        // sphere.rotateY(Math.PI);
+      } else if (child.name == "hamsa") {
+          tripMaterial = new THREE.ShaderMaterial( {
+              uniforms: {
+                iGlobalTime:    { value: 0.1 }
+            },
+              vertexShader: vertexTrip,
+              fragmentShader: fragmentTrip
+            }
+          )
+          child.material = tripMaterial;
       }
     }
   
@@ -507,38 +494,7 @@ async function init() {
   finalComposer.addPass( smaaPass );
   finalComposer.addPass( finalPass );
   
-  if (debugMode) {
-  const gui = new GUI();
-  
-  const bloomFolder = gui.addFolder( 'bloom' );
-  
-  bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
-  
-    bloomPass.threshold = Number( value );
-  
-  } );
-  
-  bloomFolder.add( params, 'strength', 0.0, 3 ).onChange( function ( value ) {
-  
-    bloomPass.strength = Number( value );
-  
-  } );
-  
-  bloomFolder.add( params, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
-  
-    bloomPass.radius = Number( value );
-  
-  } );
-  
-  const toneMappingFolder = gui.addFolder( 'tone mapping' );
-  
-  toneMappingFolder.add( params, 'exposure', 0.1, 2 ).onChange( function ( value ) {
-  
-    renderer.toneMappingExposure = Math.pow( value, 4.0 );
-  
-  } );
-  // bloom
-}
+
   bloomPass.threshold = Number( params.threshold );
   bloomPass.strength = Number( params.strength );
   bloomPass.radius = Number( params.radius );
@@ -592,6 +548,69 @@ async function init() {
     scene.add(element);
   });
   sideScreen = 1;
+  button = document.createElement( 'button' );
+  button.innerHTML = "Click here to start";
+  button.addEventListener ("click", function() {
+    text.remove();
+    button.remove();
+    ButtonContainer.style.opacity = 0;
+    scene.visible = true;
+    moveit();
+    visualizer.load(mix);
+  });
+
+  ButtonContainer.addEventListener("transitionend", (event) => {
+    if (event.target == ButtonContainer)
+      ButtonContainer.remove();
+  });
+
+  text.innerHTML = "Loading...";
+  button.setAttribute('class', "Start");
+  ButtonContainer.appendChild(text);
+  ButtonContainer.appendChild(button);
+  loadingManager.onLoad = function() {
+    console.log("doneLoading");
+    button.style.visibility = 'visible';
+    text.innerHTML = 'Ready.';
+    changeSideScreen()
+  }
+  document.body.appendChild( container );
+  if (debugMode) {
+    visualizer.load(mix);
+    scene.visible = true;
+    ButtonContainer.remove();
+    moveit();
+    const gui = new GUI();
+    
+    const bloomFolder = gui.addFolder( 'bloom' );
+    
+    bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
+    
+      bloomPass.threshold = Number( value );
+    
+    } );
+    
+    bloomFolder.add( params, 'strength', 0.0, 3 ).onChange( function ( value ) {
+    
+      bloomPass.strength = Number( value );
+    
+    } );
+    
+    bloomFolder.add( params, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
+    
+      bloomPass.radius = Number( value );
+    
+    } );
+    
+    const toneMappingFolder = gui.addFolder( 'tone mapping' );
+    
+    toneMappingFolder.add( params, 'exposure', 0.1, 2 ).onChange( function ( value ) {
+    
+      renderer.toneMappingExposure = Math.pow( value, 4.0 );
+    
+    } );
+}
+  
   animate();
 }
 
@@ -809,9 +828,13 @@ function animate() {
   //console.log(analysis);
 
   // visual 
-  if (visual) {
-    visual.uniforms.iGlobalTime.value = clock.getElapsedTime();
+  if (visualMaterial) {
+    visualMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
     visualizer.update();
+  } 
+
+  if (tripMaterial) {
+    tripMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
   }
 
 }

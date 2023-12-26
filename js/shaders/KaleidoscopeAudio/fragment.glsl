@@ -48,13 +48,13 @@ vec2 Kaleidoscope( vec2 uv, float n, float bias ) {
 
 void main()
 {
+	vec2 p = -1.0 + 2.0 * vUv;
 	vec2 ratio = vUv.xy / min( vUv.x, vUv.y );
-	//vec2 uv = ( gl_FragColor.xy * 2.0 - vUv.xy ) / min( vUv.x, vUv.y );
-	vec2 uv = -1.0 + 2.0 * vUv;
+	vec2 uv = ( p.xy * 2.0 - vUv.xy ) / min( vUv.x, vUv.y );
 	// uv.x = vUv.y;
 	// uv.y = vUv.x;
 	// --- Kaleidoscope ---
-	uv = mix( uv, Kaleidoscope( uv, NUM_SIDES, iGlobalTime*10. ), USE_KALEIDOSCOPE ); 
+	uv = mix( p, Kaleidoscope( uv, NUM_SIDES, iGlobalTime*10. ), USE_KALEIDOSCOPE ); 
 	
 	//uv *= ZOOM_FACTOR+(BASS_INTENSITY)* (texture(iChannel1, vec2(.01,0)).r);
 	

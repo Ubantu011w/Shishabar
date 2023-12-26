@@ -11,6 +11,7 @@ export class Visualizer {
     this.loader = new THREE.AudioLoader();
 
     this.analyser = new THREE.AudioAnalyser(this.sound, 32);
+    this.spectrum;
   }
   
   load(path) {
@@ -25,10 +26,15 @@ export class Visualizer {
   getFrequency() {
     return this.analyser.getAverageFrequency();
   }
+  
+  getSpectrum() {
+    return this.analyser.getFrequencyData();
+  }
 
   update() {
     const freq = Math.max(this.getFrequency() - 100, 0) / 50 // disregarding anything bellow 100 because dont matter
     this.mesh.material.uniforms.uAudioFrequency.value = freq;
+    this.mesh.material.uniforms.spectrum.value = this.getSpectrum();
   }
 
 }
