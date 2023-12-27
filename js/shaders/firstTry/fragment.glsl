@@ -82,7 +82,7 @@ void main() {
   uv = uv * 2.0;
   vec2 uv0 = uv;
 
-	uv0.y += .44;
+	uv0.y += .65;
   vec3 finalCol = vec3(0.0);
 
   for (float i=0.0; i < 2.0; i++) {

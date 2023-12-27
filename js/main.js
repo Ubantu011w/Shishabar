@@ -9,12 +9,18 @@ import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
 import { Slide } from './shaders/Slide.js';
 
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+
 //visualizer
 import vertex from './shaders/basicVisualizer/vertex.glsl?raw'
 import fragment from './shaders/basicVisualizer/fragment.glsl?raw'
 //trippy
 import vertexTrip from './shaders/firstTry/vertex.glsl?raw'
 import fragmentTrip from './shaders/firstTry/fragment.glsl?raw'
+// boxing
+import vertexBoxing from './shaders/boxing/vertex.glsl?raw'
+import fragmentBoxing from './shaders/boxing/fragment.glsl?raw'
+import fragmentBoxingProgress from './shaders/boxing/fragmentProgress.glsl?raw'
 
 import { Screen } from './Screen.js'
 import { AkuAku } from './AkuAku.js';
@@ -37,7 +43,7 @@ let pointerDisable = false;
 let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer;
-let visualMaterial, visualizer, tripMaterial;
+let visualMaterial, visualizer, tripMaterial, boxingMaterial, boxingProgressMaterial;
 
 let sounds = new Sound();
 
@@ -48,7 +54,7 @@ bloomLayer.set( BLOOM_SCENE );
 
 const params = {
   threshold: 0,
-  strength: 0.55,
+  strength: 1.77,
   radius: 0.42,
   exposure: 1
 };
@@ -148,7 +154,7 @@ async function init() {
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
 
-  /* document.addEventListener( 'pointermove', onPointerMove ); */
+  document.addEventListener( 'pointermove', onPointerMove );
   document.addEventListener( 'pointerdown', onPointerDown );
 
   // model
@@ -338,7 +344,8 @@ async function init() {
       }
 
       else if (child.name == "hologram") {
-        if (rays)
+        child.layers.enable( BLOOM_SCENE );
+        if (grad)
           child.material = grad.material
         else {
           grad = new Gradient(child)
@@ -378,19 +385,30 @@ async function init() {
       }
 
       else if (child.name == "boxingScreen2") {
-        if (grad)
-          child.material = grad.material
-        else {
-          grad = new Gradient(child)
-        }
+        boxingProgressMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            iGlobalTime:    { value: 0.0 },
+            progress:    { value: 152 },
+          },
+          vertexShader: vertexBoxing,
+          fragmentShader: fragmentBoxingProgress
+        })
+        child.material = boxingProgressMaterial;
       }
 
       else if (child.name == "boxingScreen3") {
-        material = new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          map: textureLoader.load( '/static/textures/boxingScreen3.jpg' ),
-        })
-          child.material = material;
+        boxingMaterial = new THREE.ShaderMaterial( {
+          uniforms: {
+            progress:    { value: 152},
+            iGlobalTime:    { value: 0.1 },
+            texture1: { value: textureLoader.load( '/static/textures/characters.png' ) },
+            texture2: { value: textureLoader.load( '/static/textures/boxingScreen3.jpg' ) }
+  
+        },
+          vertexShader: vertexBoxing,
+          fragmentShader: fragmentBoxing
+        });
+          child.material = boxingMaterial;
       }
 
       else if (child.name == "fans" || child.name == "fans2") {
@@ -423,10 +441,18 @@ async function init() {
         )
         child.material = visualMaterial;
         visualizer = new Visualizer(child);
-    //child.layers.enable(BLOOM_SCENE);
-          
         // const geometry = new THREE.PlaneGeometry( 108, 108 ); 
-        // const sphere = new THREE.Mesh( geometry, visualMaterial ); scene.add( sphere );
+        // boxingMaterial = new THREE.ShaderMaterial( {
+        //   uniforms: {
+        //     progress:    { value: 0},
+        //     iGlobalTime:    { value: 0.1 },
+        //     texture1: { value: textureLoader.load( '/static/textures/characters.png' ) },
+  
+        // },
+        //   vertexShader: vertexBoxing,
+        //   fragmentShader: fragmentBoxing
+        // });
+        // const sphere = new THREE.Mesh( geometry, boxingMaterial );
         // scene.add(sphere);
         // sphere.position.set(0,130,-200);
         // sphere.rotateY(Math.PI);
@@ -437,6 +463,11 @@ async function init() {
             },
               vertexShader: vertexTrip,
               fragmentShader: fragmentTrip
+            }
+          )
+          child.material = tripMaterial;
+      } else if (child.name == "hamsaOutline") {
+          tripMaterial = new THREE.MeshBasicMaterial( { color: 0x5e5e5e
             }
           )
           child.material = tripMaterial;
@@ -616,15 +647,20 @@ async function init() {
 
 function onPointerMove( event ) {
 
-/*   pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+ pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 
   raycaster.setFromCamera( pointer, camera );
 
   const intersects = raycaster.intersectObjects( objects, false );
- */
+  if ( intersects.length > 0) {
+    document.body.style.cursor = 'pointer';
+  } else {
+    document.body.style.cursor = 'default';
+  }
 }
 
 function onPointerDown( event ) {
+  document.body.style.cursor = 'default';
   if (!pointerDisable) {
     if (event.button == 0) {
     pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
@@ -666,6 +702,7 @@ function onPointerDown( event ) {
     }
 
     else if (intersect.object == boxingBag) {
+      
       sounds.playPunch();
       gsap.to(boxingBag.rotation,{
           duration: 0.3, 
@@ -675,11 +712,24 @@ function onPointerDown( event ) {
               gsap.to(boxingBag.rotation,{
                 duration: 0.2, 
                 z: Math.PI,
-              })
-            }, 5000)
+              });
+            }, 8000)
             pointerDisable = false;
           }
         })
+        let min = 150, max = 999;
+        boxingMaterial.uniforms.progress.value = 0;
+        boxingProgressMaterial.uniforms.progress.value = 0;
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        let random = Math.floor(Math.random() * (max - min + 1) + min);
+        gsap.to([boxingMaterial.uniforms.progress, boxingProgressMaterial.uniforms.progress], {value:random,
+          duration: 7,
+          ease: "power3.out",
+          onComplete: () => {
+            boxingMaterial.uniforms.progress.value = random;
+          }
+      })
 
       screenmode = false;
     }
@@ -837,6 +887,13 @@ function animate() {
     tripMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
   }
 
+  if (boxingMaterial) {
+    boxingMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
+  }
+  if (boxingProgressMaterial) {
+    boxingProgressMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
+  }
+
 }
 
 function SetControlsLimit(direction) {
@@ -905,16 +962,16 @@ function moveToProjects(duration) {
   controls.maxDistance = Infinity;
   controls.enabled = false;
   gsap.to(camera.position, { 
-    duration: 1.5,
+    duration: duration,
     ease: "power1.inOut",
     x: -1.27,
-    y: 195,
-    z: 110, 
+    y: 188,
+    z: 100, 
     onComplete: () => SetControlsLimit(1) 
   })
 
   gsap.to(controls.target, { 
-    duration: 1.5,
+    duration: duration,
     ease: "power1.inOut",
     x: -1.6,
     y: 183,
@@ -931,10 +988,10 @@ function moveToAboutme(duration) {
   controls.enableRotate = false;
   controls.enabled = false;
   gsap.to(camera.position, { // arcade
-    duration: 1.5,
+    duration: duration,
     ease: "power1.inOut",
     x: main.x - 90,
-    y: main.y + 35,
+    y: main.y + 40,
     z: main.z, // maybe adding even more offset depending on your model
     onComplete: () =>  {
       SetControlsLimit(2);
@@ -949,7 +1006,7 @@ function moveToCredits(duration) {
   controls.maxDistance = Infinity;
   screenmode = false;
   gsap.to(camera.position, { 
-    duration: 1.5,
+    duration: duration,
     ease: "power1.inOut",
     x: -320,
     y: 80,
