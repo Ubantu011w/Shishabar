@@ -42,7 +42,7 @@ let pointer, raycaster;
 let pointerDisable = false;
 let button, text; // Start button
 let sideScreen;
-let finalComposer, bloomComposer;
+let finalComposer, bloomComposer, smaaPass;
 let visualMaterial, visualizer, tripMaterial, boxingMaterial, boxingProgressMaterial;
 
 let sounds = new Sound();
@@ -56,7 +56,8 @@ const params = {
   threshold: 0,
   strength: 1.77,
   radius: 0.42,
-  exposure: 1
+  exposure: 1,
+  smaaPass: true
 };
 
 const darkMaterial = new THREE.MeshBasicMaterial( { color: 'black' } );
@@ -191,11 +192,24 @@ async function init() {
         }
 
         let material; 
-        if (child.name == "ledRed" || child.name == "ledRoof") {
+        if (child.name == "ledRoof") {
           material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
           child.material = material;
           child.layers.enable( BLOOM_SCENE );
 
+        }
+
+        if (child.name == "ledRed") {
+          material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x00ffff, emissiveIntensity: 2});
+          child.material = material;
+          child.layers.enable( BLOOM_SCENE );
+
+        }
+
+        else if (child.name == "ledBlue") {
+          material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x00ffff, emissiveIntensity: 2});
+          child.material = material;
+          child.layers.enable( BLOOM_SCENE );
         }
 
         if (child.name == "speakerSet") {
@@ -203,12 +217,7 @@ async function init() {
           child.material = material;
         }
 
-        else if (child.name == "ledBlue") {
-          material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 4});
-          child.material = material;
-          child.layers.enable( BLOOM_SCENE );
 
-        }
         else if (child.name == "ledBar") {
           material = new THREE.MeshStandardMaterial({ color: 0x6600ff, emissive: 0x6600ff, emissiveIntensity: 4});
           child.material = material;
@@ -430,10 +439,8 @@ async function init() {
           transparent: true,
             uniforms: {
               iGlobalTime:    { value: 0.1 },
-              uAudioFrequency: { value: 0.1 },
               texture1: { value: textureLoader.load( '/static/textures/characters.png' ) },
-              u_resolution : {type: 'v2', value : new THREE.Vector2(108, 108)},
-              spectrum: {type: 'sampler2D', value: null}
+              spectrum: {value: null}
           },
             vertexShader: vertex,
             fragmentShader: fragment
@@ -521,8 +528,11 @@ async function init() {
     } ), "baseTexture"
   );
   finalPass.needsSwap = true;
-  const smaaPass = new SMAAPass()
+  smaaPass = new SMAAPass(window.innerWidth, window.innerHeight)
+  smaaPass.enabled = true;
+  smaaPass.needsSwap = true;
   finalComposer.addPass( smaaPass );
+  bloomComposer.addPass( smaaPass );
   finalComposer.addPass( finalPass );
   
 
@@ -607,8 +617,7 @@ async function init() {
   }
   document.body.appendChild( container );
   if (debugMode) {
-    visualizer.load(mix);
-    scene.visible = true;
+    scene.visible = false;
     ButtonContainer.remove();
     moveit();
     const gui = new GUI();
@@ -638,6 +647,14 @@ async function init() {
     toneMappingFolder.add( params, 'exposure', 0.1, 2 ).onChange( function ( value ) {
     
       renderer.toneMappingExposure = Math.pow( value, 4.0 );
+    
+    } );
+
+    const smaaPassFolder = gui.addFolder( 'smaaPass' );
+    
+    smaaPassFolder.add( params, 'smaaPass' ).onChange( function ( value ) {
+      console.log(smaaPass.enabled);
+      smaaPass.enabled = value;
     
     } );
 }
