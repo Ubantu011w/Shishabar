@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 
 export class Visualizer {
-  constructor(mesh) {
+  constructor(mesh, speakers, camera) {
     this.mesh = mesh;
     this.listener = new THREE.AudioListener();
-    this.mesh.add(this.listener);
-
-    this.sound = new THREE.Audio(this.listener);
+    this.camera = camera;
+    this.camera.add(this.listener);
+    this.speakers = speakers;
+    //this.sound = new THREE.Audio(this.listener);
+    this.sound = new THREE.PositionalAudio(this.listener);
     this.loader = new THREE.AudioLoader();
     let renderer = new THREE.WebGLRenderer();
     this.format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
@@ -15,12 +17,21 @@ export class Visualizer {
   }
   
   load(path) {
+    // this.loader.load(path, (buffer) => {
+    //   this.sound.setBuffer(buffer);
+    //   this.sound.setLoop(true);
+    //   this.sound.setVolume(0.25);
+    //   this.sound.play();
+    // })
+
     this.loader.load(path, (buffer) => {
       this.sound.setBuffer(buffer);
       this.sound.setLoop(true);
-      this.sound.setVolume(0.25);
+      this.sound.setVolume(0.65);
+      this.sound.setRefDistance( 150 );
       this.sound.play();
     })
+    this.speakers.add(this.sound);
   }
 
   getFrequency() {

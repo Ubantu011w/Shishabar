@@ -46,6 +46,7 @@ let finalComposer, bloomComposer, smaaPass;
 let visualMaterial, visualizer, tripMaterial, boxingMaterial, boxingProgressMaterial;
 
 let sounds = new Sound();
+let speakers;
 
 const BLOOM_SCENE = 1;
 
@@ -215,6 +216,7 @@ async function init() {
         if (child.name == "speakerSet") {
           material = new THREE.MeshStandardMaterial({ color: 0x292929});
           child.material = material;
+          speakers = child;
         }
 
 
@@ -447,8 +449,7 @@ async function init() {
           }
         )
         child.material = visualMaterial;
-        visualizer = new Visualizer(child);
-        // const geometry = new THREE.PlaneGeometry( 108, 108 ); 
+        visualizer = new Visualizer(child, speakers, camera);
         // boxingMaterial = new THREE.ShaderMaterial( {
         //   uniforms: {
         //     progress:    { value: 0},
@@ -459,7 +460,8 @@ async function init() {
         //   vertexShader: vertexBoxing,
         //   fragmentShader: fragmentBoxing
         // });
-        // const sphere = new THREE.Mesh( geometry, boxingMaterial );
+        // const geometry = new THREE.PlaneGeometry( 108, 108 ); 
+        // const sphere = new THREE.Mesh( geometry, visualMaterial );
         // scene.add(sphere);
         // sphere.position.set(0,130,-200);
         // sphere.rotateY(Math.PI);
@@ -658,7 +660,6 @@ async function init() {
     
     } );
 }
-  
   animate();
 }
 
