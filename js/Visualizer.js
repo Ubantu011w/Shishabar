@@ -7,7 +7,6 @@ export class Visualizer {
     this.camera = camera;
     this.camera.add(this.listener);
     this.speakers = speakers;
-    //this.sound = new THREE.Audio(this.listener);
     this.sound = new THREE.PositionalAudio(this.listener);
     this.loader = new THREE.AudioLoader();
     let renderer = new THREE.WebGLRenderer();
@@ -17,13 +16,6 @@ export class Visualizer {
   }
   
   load(path) {
-    // this.loader.load(path, (buffer) => {
-    //   this.sound.setBuffer(buffer);
-    //   this.sound.setLoop(true);
-    //   this.sound.setVolume(0.25);
-    //   this.sound.play();
-    // })
-
     this.loader.load(path, (buffer) => {
       this.sound.setBuffer(buffer);
       this.sound.setLoop(true);

@@ -105,7 +105,7 @@ void main()
 		gradCol = mixc(gradCol,colors[i],(s-float(i-1)/n)*n);
     }
       
-    col += vec3(1.0-smoothstep(0.0,0.01,p.y-s*1.5));
+    col += vec3(1.0-smoothstep(0.0,0.05,p.y-s*1.5));
     col *= gradCol;
 
     ref += vec3(1.0-smoothstep(0.0,-0.01,p.y+s*1.5));
@@ -124,5 +124,5 @@ void main()
     vec2 uv = -1.0 + 2.0 *vUv;
     //col = mix(col, BLUE, printNumber(uv, s)); 
     
-	gl_FragColor = vec4(col,1.0);
+	gl_FragColor = vec4(col,0.5);
 }

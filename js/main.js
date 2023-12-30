@@ -9,24 +9,25 @@ import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
 import { Slide } from './shaders/Slide.js';
 
-import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-
 //visualizer
 import vertex from './shaders/basicVisualizer/vertex.glsl?raw'
 import fragment from './shaders/basicVisualizer/fragment.glsl?raw'
 //trippy
-import vertexTrip from './shaders/firstTry/vertex.glsl?raw'
-import fragmentTrip from './shaders/firstTry/fragment.glsl?raw'
+import vertexTrip from './shaders/hamsa/vertex.glsl?raw'
+import fragmentTrip from './shaders/hamsa/fragment.glsl?raw'
 // boxing
 import vertexBoxing from './shaders/boxing/vertex.glsl?raw'
 import fragmentBoxing from './shaders/boxing/fragment.glsl?raw'
 import fragmentBoxingProgress from './shaders/boxing/fragmentProgress.glsl?raw'
+// blob
+import vertexBlob from './shaders/blob/vertex.glsl?raw'
+import fragmentBlob from './shaders/blob/fragment.glsl?raw'
 
 import { Screen } from './Screen.js'
 import { AkuAku } from './AkuAku.js';
 import { Sound } from './Sound.js';
 import { Visualizer } from './Visualizer.js';
-import mix from '../sounds/mix.mp3';
+import mix from '../sounds/mix2.mp3';
 
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -43,7 +44,8 @@ let pointerDisable = false;
 let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer, smaaPass;
-let visualMaterial, visualizer, tripMaterial, boxingMaterial, boxingProgressMaterial;
+let visualMaterial, visualizer, tripMaterial, boxingMaterial, boxingProgressMaterial, blobMaterial;
+let blobs = [];
 
 let sounds = new Sound();
 let speakers;
@@ -192,6 +194,12 @@ async function init() {
             child.material = material;
         }
 
+        if (child.name == "roofTop") {
+          const material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: textureLoader.load( '/static/textures/roofTop.jpg' )});
+            child.material = material;
+        }
         let material; 
         if (child.name == "ledRoof") {
           material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
@@ -363,7 +371,7 @@ async function init() {
         }
       }
 
-      else if (child.name == "aquiriumGlass") {
+      else if (child.name == "aquiriumGlass" || child.name == "blobGlass") {
         if (rays)
         child.material = rays.material
         else {
@@ -465,6 +473,11 @@ async function init() {
         // scene.add(sphere);
         // sphere.position.set(0,130,-200);
         // sphere.rotateY(Math.PI);
+      } else if (child.name == "audioScreenFrame") {
+        material = new THREE.MeshBasicMaterial( { color: 0x5e5e5e, side: THREE.DoubleSide}
+        )
+        child.material = material;
+    
       } else if (child.name == "hamsa") {
           tripMaterial = new THREE.ShaderMaterial( {
               uniforms: {
@@ -480,6 +493,23 @@ async function init() {
             }
           )
           child.material = tripMaterial;
+      } else if (child.name.includes("blob")) {
+        child.layers.enable(BLOOM_SCENE);
+        blobs.push(child);
+        if (blobMaterial) {
+          child.material = blobMaterial;
+        } else {
+          blobMaterial = new THREE.ShaderMaterial( {
+            uniforms: {
+              u_intensity:    { value: 0.3},
+              iGlobalTime:    { value: 0 },
+    
+          },
+            vertexShader: vertexBlob,
+            fragmentShader: fragmentBlob
+          });
+          child.material = blobMaterial;
+        }
       }
     }
   
@@ -619,9 +649,10 @@ async function init() {
   }
   document.body.appendChild( container );
   if (debugMode) {
-    scene.visible = false;
+    scene.visible = true;
     ButtonContainer.remove();
     moveit();
+    visualizer.load(mix);
     const gui = new GUI();
     
     const bloomFolder = gui.addFolder( 'bloom' );
@@ -911,6 +942,14 @@ function animate() {
   if (boxingProgressMaterial) {
     boxingProgressMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
   }
+  if (blobMaterial) {
+    blobMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime() / 5;
+  }
+  let i = 0;
+  blobs.forEach(blob => {
+    blob.position.y = (Math.cos( clock.getElapsedTime()/2 + i ) * 3.75 + 186);
+    i++;
+  });
 
 }
 
@@ -925,7 +964,7 @@ function SetControlsLimit(direction) {
       controls.enabled = true;
       break;
     case 1: // projects
-      controls.minDistance = 10.0,
+      controls.minDistance = 3.0,
       controls.maxDistance = 100.0
       controls.enableRotate = false
       controls.enabled = true;
@@ -933,6 +972,7 @@ function SetControlsLimit(direction) {
     case 2: // aboutme
       controls.minDistance = 200;
       controls.maxDistance = 400;
+      controls.enableRotate = false
       controls.enabled = true;
       break;
     case 3: // reset
