@@ -38,11 +38,11 @@ vec2 Kaleidoscope( vec2 uv, float n, float bias ) {
 	return vec2( cos( a ), sin( a ) ) * r;
 }
 
-void main()
+void main( )
 {
-	vec2 ratio = vUv.xy / min( vUv.x, vUv.y );
-	//vec2 uv = ( gl_FragCoord.xy * 2.0 - vUv.xy ) / min( vUv.x, vUv.y );
-	vec2 uv = -1.0 + 2.0 *vUv;
+	vec2 uv = vUv - 0.5;
+	uv = uv * 2.0;
+	vec2 ratio = uv.xy / min( uv.x, uv.y );
 	
 	// --- Kaleidoscope ---
 	uv = mix( uv, Kaleidoscope( uv, NUM_SIDES, iGlobalTime * 0.5 ), USE_KALEIDOSCOPE ); 
@@ -50,8 +50,8 @@ void main()
 	vec3 final_color = vec3( 0.0 );
 	float final_density = 0.0;
 	for ( int i = 0; i < 128; i++ ) {
-		vec4 noise  = texture( texture1, vec2( float( i ) + 0.5, 0.5 ) / 256.0 );
-		vec4 noise2 = texture( texture1, vec2( float( i ) + 0.5, 9.5 ) / 256.0 );
+		vec4 noise  = texture2D( texture1, vec2( float( i ) + 0.5, 0.5 ) / 256.0 );
+		vec4 noise2 = texture2D( texture1, vec2( float( i ) + 0.5, 9.5 ) / 256.0 );
 		
 		// velocity
 		vec2 vel = noise.xy * 2.0 - vec2( 1.0 );

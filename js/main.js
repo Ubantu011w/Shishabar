@@ -8,6 +8,7 @@ import { Gradient } from './shaders/Gradient.js';
 import { Rays } from './shaders/Rays.js';
 import { Transition } from './shaders/Transition.js';
 import { Slide } from './shaders/Slide.js';
+import { blobGlass } from './shaders/blob/blobGlass.js';
 
 //visualizer
 import vertex from './shaders/basicVisualizer/vertex.glsl?raw'
@@ -22,12 +23,18 @@ import fragmentBoxingProgress from './shaders/boxing/fragmentProgress.glsl?raw'
 // blob
 import vertexBlob from './shaders/blob/vertex.glsl?raw'
 import fragmentBlob from './shaders/blob/fragment.glsl?raw'
+// // rayMarching
+// import vertexrayMarching from './shaders/rayMarchingVertices/vertex.glsl?raw'
+// import fragmentrayMarching from './shaders/rayMarchingVertices/fragment.glsl?raw'
+// kaleidoscope
+// import vertexKaleido from './shaders/kaleidoscope/vertex.glsl?raw'
+// import fragmentKaleido from './shaders/kaleidoscope/fragment.glsl?raw'
 
 import { Screen } from './Screen.js'
 import { AkuAku } from './AkuAku.js';
 import { Sound } from './Sound.js';
 import { Visualizer } from './Visualizer.js';
-import mix from '../sounds/mix2.mp3';
+import mix from '../sounds/mix.mp3';
 
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -44,7 +51,29 @@ let pointerDisable = false;
 let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer, smaaPass;
-let visualMaterial, visualizer, tripMaterial, boxingMaterial, boxingProgressMaterial, blobMaterial;
+let visualMaterial, visualizer, tripMaterial,
+boxingMaterial, boxingProgressMaterial, blobMaterial,
+rayMarchingMaterial;
+
+
+const container = document.createElement( 'div' ); // outer
+const ButtonContainer = document.createElement( 'div' );
+const SceneContainer = document.createElement( 'div' );
+text = document.createElement( 'p' );
+
+ButtonContainer.className = "innerButton";
+SceneContainer.className = "inner";
+container.append(SceneContainer);
+container.append(ButtonContainer);
+
+text.innerHTML = "Loading...";
+button = document.createElement( 'button' );
+button.innerHTML = "Click here to start";
+button.setAttribute('class', "Start");
+ButtonContainer.appendChild(text);
+ButtonContainer.appendChild(button);
+
+
 let blobs = [];
 
 let sounds = new Sound();
@@ -132,13 +161,7 @@ async function init() {
   0 // current index
   ]
 
-  const container = document.createElement( 'div' ); // outer
-  const ButtonContainer = document.createElement( 'div' );
-  const SceneContainer = document.createElement( 'div' );
-  text = document.createElement( 'p' );
-  
-  ButtonContainer.className = "innerButton";
-  SceneContainer.className = "inner";
+
 
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
 
@@ -371,12 +394,17 @@ async function init() {
         }
       }
 
-      else if (child.name == "aquiriumGlass" || child.name == "blobGlass") {
+      else if (child.name == "aquiriumGlass") {
         if (rays)
         child.material = rays.material
         else {
           rays = new Rays(child)
         }
+        child.layers.enable( BLOOM_SCENE );
+      }
+
+      else if (child.name == "blobGlass") {
+        new blobGlass(child);
         child.layers.enable( BLOOM_SCENE );
       }
 
@@ -407,7 +435,7 @@ async function init() {
         boxingProgressMaterial = new THREE.ShaderMaterial({
           uniforms: {
             iGlobalTime:    { value: 0.0 },
-            progress:    { value: 152 },
+            progress:    { value: 0 },
           },
           vertexShader: vertexBoxing,
           fragmentShader: fragmentBoxingProgress
@@ -418,7 +446,7 @@ async function init() {
       else if (child.name == "boxingScreen3") {
         boxingMaterial = new THREE.ShaderMaterial( {
           uniforms: {
-            progress:    { value: 152},
+            progress:    { value: 0 },
             iGlobalTime:    { value: 0.1 },
             texture1: { value: textureLoader.load( '/static/textures/characters.png' ) },
             texture2: { value: textureLoader.load( '/static/textures/boxingScreen3.jpg' ) }
@@ -458,21 +486,23 @@ async function init() {
         )
         child.material = visualMaterial;
         visualizer = new Visualizer(child, speakers, camera);
-        // boxingMaterial = new THREE.ShaderMaterial( {
+        // sphere
+        // rayMarchingMaterial = new THREE.ShaderMaterial( {
         //   uniforms: {
         //     progress:    { value: 0},
         //     iGlobalTime:    { value: 0.1 },
+        //     resolution:    { value: new THREE.Vector4() },
         //     texture1: { value: textureLoader.load( '/static/textures/characters.png' ) },
   
         // },
-        //   vertexShader: vertexBoxing,
-        //   fragmentShader: fragmentBoxing
+        //   vertexShader: vertexrayMarching,
+        //   fragmentShader: fragmentrayMarching
         // });
         // const geometry = new THREE.PlaneGeometry( 108, 108 ); 
-        // const sphere = new THREE.Mesh( geometry, visualMaterial );
-        // scene.add(sphere);
-        // sphere.position.set(0,130,-200);
-        // sphere.rotateY(Math.PI);
+        // const plane = new THREE.Mesh( geometry, rayMarchingMaterial );
+        // scene.add(plane);
+        // plane.position.set(0,130,-200);
+        // plane.rotateY(Math.PI);
       } else if (child.name == "audioScreenFrame") {
         material = new THREE.MeshBasicMaterial( { color: 0x5e5e5e, side: THREE.DoubleSide}
         )
@@ -574,8 +604,7 @@ async function init() {
   renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
 
   SceneContainer.appendChild( renderer.domElement );
-  container.append(SceneContainer);
-  container.append(ButtonContainer);
+
   // ktx2loader
 
 
@@ -621,8 +650,7 @@ async function init() {
     scene.add(element);
   });
   sideScreen = 1;
-  button = document.createElement( 'button' );
-  button.innerHTML = "Click here to start";
+
   button.addEventListener ("click", function() {
     text.remove();
     button.remove();
@@ -637,10 +665,7 @@ async function init() {
       ButtonContainer.remove();
   });
 
-  text.innerHTML = "Loading...";
-  button.setAttribute('class', "Start");
-  ButtonContainer.appendChild(text);
-  ButtonContainer.appendChild(button);
+
   loadingManager.onLoad = function() {
     console.log("doneLoading");
     button.style.visibility = 'visible';
@@ -652,7 +677,7 @@ async function init() {
     scene.visible = true;
     ButtonContainer.remove();
     moveit();
-    visualizer.load(mix);
+    //visualizer.load(mix);
     const gui = new GUI();
     
     const bloomFolder = gui.addFolder( 'bloom' );
@@ -772,6 +797,7 @@ function onPointerDown( event ) {
         min = Math.ceil(min);
         max = Math.floor(max);
         let random = Math.floor(Math.random() * (max - min + 1) + min);
+        console.log(random)
         gsap.to([boxingMaterial.uniforms.progress, boxingProgressMaterial.uniforms.progress], {value:random,
           duration: 7,
           ease: "power3.out",
@@ -939,6 +965,7 @@ function animate() {
   if (boxingMaterial) {
     boxingMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
   }
+  
   if (boxingProgressMaterial) {
     boxingProgressMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime();
   }
@@ -950,6 +977,10 @@ function animate() {
     blob.position.y = (Math.cos( clock.getElapsedTime()/2 + i ) * 3.75 + 186);
     i++;
   });
+
+  // if (rayMarchingMaterial) {
+  //   rayMarchingMaterial.uniforms.iGlobalTime.value = clock.getElapsedTime()
+  // }
 
 }
 
@@ -1048,8 +1079,8 @@ function moveToAboutme(duration) {
   gsap.to(camera.position, { // arcade
     duration: duration,
     ease: "power1.inOut",
-    x: main.x - 90,
-    y: main.y + 40,
+    x: main.x - 60,
+    y: main.y + 25,
     z: main.z, // maybe adding even more offset depending on your model
     onComplete: () =>  {
       SetControlsLimit(2);

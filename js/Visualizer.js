@@ -11,7 +11,7 @@ export class Visualizer {
     this.loader = new THREE.AudioLoader();
     let renderer = new THREE.WebGLRenderer();
     this.format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
-    this.fftSize = 128;
+    this.fftSize = 512;
     this.analyser = new THREE.AudioAnalyser(this.sound, this.fftSize);
   }
   
@@ -31,8 +31,11 @@ export class Visualizer {
   }
   
   getSpectrum() {
-    this.analyser.getFrequencyData();
-    return new THREE.DataTexture( this.analyser.data, this.fftSize / 2, 1, this.format);
+    let data = this.analyser.getFrequencyData();
+    // data[0] = data[4]
+    // data[1] = data[3]
+    // data[45] = data[3]
+    return new THREE.DataTexture( data, this.fftSize / 2, 1, this.format);
   } 
 
   update() {
