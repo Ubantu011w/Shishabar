@@ -30,7 +30,8 @@ class AkuAku {
     const loader = new FBXLoader(loadingManager);
     const model = await loader.loadAsync('static/models/aku.fbx');
     const positions = this.combineBuffer( model, 'position' );
-    this.createMesh( positions, 0.5, -26 , 198, 60, Math.random() * 0xfffffff);
+    const color = Math.random() * 0xffffff;
+    this.createMesh( positions, 0.5, -26 , 198, 60, color);
   }
   createMesh( positions, scale, x, y, z, color) {
     let mesh;

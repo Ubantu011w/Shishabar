@@ -108,7 +108,7 @@ void main() {
 
     d = cos(d*8. + iGlobalTime) /8.;
     d = abs(d);
-    d = 0.02/d;
+    d = pow(0.01 / d, 1.2);
 
     finalCol += col * d;
   }

@@ -486,6 +486,7 @@ async function init() {
         )
         child.material = visualMaterial;
         visualizer = new Visualizer(child, speakers, camera);
+        visualizer.load(mix);
         // sphere
         // rayMarchingMaterial = new THREE.ShaderMaterial( {
         //   uniforms: {
@@ -656,8 +657,8 @@ async function init() {
     button.remove();
     ButtonContainer.style.opacity = 0;
     scene.visible = true;
+    visualizer.play();
     moveit();
-    visualizer.load(mix);
   });
 
   ButtonContainer.addEventListener("transitionend", (event) => {

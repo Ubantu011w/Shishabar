@@ -21,9 +21,12 @@ export class Visualizer {
       this.sound.setLoop(true);
       this.sound.setVolume(0.65);
       this.sound.setRefDistance( 150 );
-      this.sound.play();
     })
     this.speakers.add(this.sound);
+  }
+
+  play() {
+    this.sound.play();
   }
 
   getFrequency() {

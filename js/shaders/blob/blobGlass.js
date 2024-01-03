@@ -32,11 +32,16 @@ blobGlass.Shader = {
         
         'void main()',
         '{',
-            'vec2 uv = -1.0 + 2.0 *vUv;',
-            'uv = uv + 0.5;',
-            'vec3 col = vec3(0.9,  uv.y - 0.7, 0.25);',
-            
-            'gl_FragColor = vec4(col, 0.35);',
+            'vec2 uv = vUv;',
+"            vec3 col;",
+"            if (uv.y > .5) {",
+"                col = vec3(0.95,  uv.y - 0.6 , 0.0);",
+"                gl_FragColor = vec4(col, 0.5);",
+"            }",
+"            else {",
+"                col = vec3(0.95,  1. - uv.y - 0.6 , 0.0);",
+"                gl_FragColor = vec4(col, 0.5);",
+"            }",
         
         '}'].join( '\n' )
 };
