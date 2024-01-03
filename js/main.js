@@ -30,6 +30,10 @@ import fragmentBlob from './shaders/blob/fragment.glsl?raw'
 // import vertexKaleido from './shaders/kaleidoscope/vertex.glsl?raw'
 // import fragmentKaleido from './shaders/kaleidoscope/fragment.glsl?raw'
 
+import { Reflector } from './shaders/Reflector.js'
+
+
+
 import { Screen } from './Screen.js'
 import { AkuAku } from './AkuAku.js';
 import { Sound } from './Sound.js';
@@ -203,16 +207,19 @@ async function init() {
                 map: textureLoader.load( '/static/textures/Plane009DiffuseMap.jpg' ),
               });
               
-/*               let geometry = new THREE.PlaneGeometry( 80, 80 );
-              groundMirror = new Reflector( geometry, {
+              let geometry = new THREE.CircleGeometry( 1000, 8 );
+              const groundMirror = new Reflector( geometry, {
                 map: textureLoader.load( '/static/textures/Plane009DiffuseMap.jpg' ),
+                clipBias: 0.003,
                 textureWidth: window.innerWidth * window.devicePixelRatio,
                 textureHeight: window.innerHeight * window.devicePixelRatio,
                 color: 0x777777ff,
               } );
+              groundMirror.material.transparent = true;
+              groundMirror.material.uniforms.opacity.value = 0.04;
               groundMirror.position.y = 0.5;
               groundMirror.rotateX( - Math.PI / 2 );
-              scene.add( groundMirror ); */
+              scene.add( groundMirror );
 
             child.material = material;
         }
@@ -545,7 +552,7 @@ async function init() {
     }
   
   });
-      scene.add( object );
+        scene.add( object );
   } );
 
   // bloom

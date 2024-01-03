@@ -30,7 +30,7 @@ export class Sound
 
         this.punch = new Howl({
             src: [punch],
-            volume: 0.8
+            volume: 0.6
         });
 
         this.appear = new Howl({
