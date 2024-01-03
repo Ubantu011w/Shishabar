@@ -97,11 +97,11 @@ void main() {
   uv = uv * 2.0;
   vec2 uv0 = uv;
 
-	uv0.y += .65;
+	uv0.y += .5;
   vec3 finalCol = vec3(0.0);
 
   for (float i=0.0; i < 2.0; i++) {
-    uv = fract(uv * 1.3) - 0.5;
+    uv = fract(uv) - 0.5;
     float d = length(uv) * exp(-length(uv0));
 
     vec3 col = palette(length(uv0) + i*.4 + iGlobalTime*.4);
