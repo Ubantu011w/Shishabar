@@ -3,7 +3,7 @@ body {
   display: flex;
 } 
 
-.Start {
+#Start {
   width: 220px;
   height: 50px;
   border: none;
@@ -18,7 +18,7 @@ body {
   visibility: hidden;
 }
 
-.Start:before {
+#Start:before {
   content: '';
   background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
   position: absolute;
@@ -35,19 +35,19 @@ body {
   border-radius: 10px;
 }
 
-.Start:active {
+#Start:active {
   color: #000
 }
 
-.Start:active:after {
+#Start:active:after {
   background: transparent;
 }
 
-.Start:hover:before {
+#Start:hover:before {
   opacity: 1;
 }
 
-.Start:after {
+#Start:after {
   z-index: -1;
   content: '';
   position: absolute;
@@ -65,12 +65,12 @@ body {
   100% { background-position: 0 0; }
 }
 
-.inner {
+#inner {
   position: absolute;
   margin: 0;
 }
 
-.innerButton {
+#innerButton {
   position: absolute;
   height: 100%;
   width: 100%;
@@ -81,7 +81,7 @@ body {
   transition-duration: 1.5s;
 }
 
-p {
+#text {
   color: #fff;
   font-size: 64px;
 }

@@ -106,7 +106,7 @@ void main() {
 
     vec3 col = palette(length(uv0) + i*.4 + iGlobalTime*.4);
 
-    d = cos(d*8. + iGlobalTime) /8.;
+    d = cos(d*12. + iGlobalTime) /8.;
     d = abs(d);
     d = pow(0.01 / d, 1.2);
 

@@ -56,27 +56,16 @@ let button, text; // Start button
 let sideScreen;
 let finalComposer, bloomComposer, smaaPass;
 let visualMaterial, visualizer, tripMaterial,
+buffer,
 boxingMaterial, boxingProgressMaterial, blobMaterial,
 rayMarchingMaterial;
 
 
-const container = document.createElement( 'div' ); // outer
-const ButtonContainer = document.createElement( 'div' );
-const SceneContainer = document.createElement( 'div' );
-text = document.createElement( 'p' );
+const ButtonContainer = document.getElementById("innerButton");
+const SceneContainer = document.getElementById("inner");
+text = document.getElementById("text");
 
-ButtonContainer.className = "innerButton";
-SceneContainer.className = "inner";
-container.append(SceneContainer);
-container.append(ButtonContainer);
-
-text.innerHTML = "Loading...";
-button = document.createElement( 'button' );
-button.innerHTML = "Click here to start";
-button.setAttribute('class', "Start");
-ButtonContainer.appendChild(text);
-ButtonContainer.appendChild(button);
-
+button = document.getElementById("Start");
 
 let blobs = [];
 
@@ -231,12 +220,17 @@ async function init() {
             child.material = material;
         }
         let material; 
-        if (child.name == "ledRoof") {
+        if (child.name == "ledRoof") { // red
           material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2});
           child.material = material;
           child.layers.enable( BLOOM_SCENE );
-
-        }
+ 
+        } 
+        // else if (child.name == "ledRoofYellow") { // yellow
+        //   material = new THREE.MeshStandardMaterial({ color: 0xFFB500, emissive: 0xFFB500, emissiveIntensity: 2});
+        //   child.material = material;
+        //   child.layers.enable( BLOOM_SCENE );
+        // }
 
         if (child.name == "ledRed") {
           material = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x00ffff, emissiveIntensity: 2});
@@ -439,6 +433,7 @@ async function init() {
       }
 
       else if (child.name == "boxingScreen2") {
+        child.layers.enable(BLOOM_SCENE);
         boxingProgressMaterial = new THREE.ShaderMaterial({
           uniforms: {
             iGlobalTime:    { value: 0.0 },
@@ -493,7 +488,7 @@ async function init() {
         )
         child.material = visualMaterial;
         visualizer = new Visualizer(child, speakers, camera);
-        visualizer.load(mix);
+        buffer = await visualizer.load(mix);
         // sphere
         // rayMarchingMaterial = new THREE.ShaderMaterial( {
         //   uniforms: {
@@ -664,7 +659,8 @@ async function init() {
     button.remove();
     ButtonContainer.style.opacity = 0;
     scene.visible = true;
-    visualizer.play();
+    visualizer.play(buffer);
+    SceneContainer.style.visibility = 'visible';
     moveit();
   });
 
@@ -680,7 +676,6 @@ async function init() {
     text.innerHTML = 'Ready.';
     changeSideScreen()
   }
-  document.body.appendChild( container );
   if (debugMode) {
     scene.visible = true;
     ButtonContainer.remove();
@@ -728,7 +723,6 @@ async function init() {
 }
 
 function onPointerMove( event ) {
-
  pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 
   raycaster.setFromCamera( pointer, camera );
@@ -742,6 +736,9 @@ function onPointerMove( event ) {
 }
 
 function onPointerDown( event ) {
+  if (!scene.visible) {
+    return;
+   }
   document.body.style.cursor = 'default';
   if (!pointerDisable) {
     if (event.button == 0) {

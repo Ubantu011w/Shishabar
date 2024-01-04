@@ -16,16 +16,29 @@ export class Visualizer {
   }
   
   load(path) {
-    this.loader.load(path, (buffer) => {
-      this.sound.setBuffer(buffer);
-      this.sound.setLoop(true);
-      this.sound.setVolume(0.65);
-      this.sound.setRefDistance( 150 );
-    })
-    this.speakers.add(this.sound);
+    return new Promise((resolve, reject) => {
+      this.loader.load(
+        path,
+        (buffer) => {
+          resolve(buffer);
+        },
+        (progress) => {
+          // You can handle progress if needed
+          console.log(`Loading: ${progress.loaded / progress.total * 100}%`);
+        },
+        (error) => {
+          reject(error);
+        }
+      );
+    });
   }
 
-  play() {
+  play(buffer) {
+    this.sound.setBuffer(buffer);
+    this.sound.setLoop(true);
+    this.sound.setVolume(0.65);
+    this.sound.setRefDistance( 150 );
+    this.speakers.add(this.sound);
     this.sound.play();
   }
 
