@@ -487,8 +487,8 @@ async function init() {
           }
         )
         child.material = visualMaterial;
-        visualizer = new Visualizer(child, speakers, camera);
-        buffer = await visualizer.load(mix);
+        visualizer = new Visualizer(child, speakers, camera, text);
+        
         // sphere
         // rayMarchingMaterial = new THREE.ShaderMaterial( {
         //   uniforms: {
@@ -670,7 +670,8 @@ async function init() {
   });
 
 
-  loadingManager.onLoad = function() {
+  loadingManager.onLoad = async function() {
+    buffer = await visualizer.load(mix);
     console.log("doneLoading");
     button.style.visibility = 'visible';
     text.innerHTML = 'Ready.';
@@ -736,7 +737,7 @@ function onPointerMove( event ) {
 }
 
 function onPointerDown( event ) {
-  if (!scene.visible) {
+  if (!scene.visible) { // click on hidden scene bug fix
     return;
    }
   document.body.style.cursor = 'default';

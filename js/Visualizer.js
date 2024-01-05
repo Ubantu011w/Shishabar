@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class Visualizer {
-  constructor(mesh, speakers, camera) {
+  constructor(mesh, speakers, camera, text) {
     this.mesh = mesh;
     this.listener = new THREE.AudioListener();
     this.camera = camera;
@@ -23,7 +23,6 @@ export class Visualizer {
           resolve(buffer);
         },
         (progress) => {
-          // You can handle progress if needed
           console.log(`Loading: ${progress.loaded / progress.total * 100}%`);
         },
         (error) => {
