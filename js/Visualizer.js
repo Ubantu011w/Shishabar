@@ -13,6 +13,7 @@ export class Visualizer {
     this.format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
     this.fftSize = 512;
     this.analyser = new THREE.AudioAnalyser(this.sound, this.fftSize);
+    this.text = document.getElementById('text');
   }
   
   load(path) {
@@ -23,6 +24,7 @@ export class Visualizer {
           resolve(buffer);
         },
         (progress) => {
+          this.text.textContent = `Loading: ${progress.loaded / progress.total * 100}%`
           console.log(`Loading: ${progress.loaded / progress.total * 100}%`);
         },
         (error) => {
