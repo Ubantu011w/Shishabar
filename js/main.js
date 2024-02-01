@@ -95,7 +95,7 @@ let ktx2Loader;
 let akuAku;
 
 loadingManager.onProgress = function (url, LoadedNumber, TotalNumber) {
-  text.textContent = `Loading ${(LoadedNumber /TotalNumber) * 75}%` // loading from 0% to 75%
+  text.textContent = `Loading: ${(LoadedNumber /TotalNumber) * 75}%` // loading from 0% to 75%
 }
 
 function loadTexture(path) { //ktx2

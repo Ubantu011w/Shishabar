@@ -24,7 +24,7 @@ export class Visualizer {
           resolve(buffer);
         },
         (progress) => {
-          this.text.textContent = `Loading: ${(progress.loaded / progress.total * 25) + 74}%` // loading from 75% to 99%
+          this.text.textContent = `Loading: ${(Math.floor((progress.loaded / progress.total * 25) + 74))}%` // loading from 75% to 99%
         },
         (error) => {
           reject(error);
