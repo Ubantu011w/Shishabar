@@ -112,6 +112,7 @@ const helpers = []; //raycast
 
 let screenmode = false;
 let screenAboutMode = false;
+let controlsLock = false;
 
 let tween, controls, center;
 let screenProjects, screenAboutme;
@@ -941,7 +942,7 @@ function animate() {
   const delta = clock.getDelta();
   if ( mixer ) mixer.update( delta );
   if ( mixerFish ) mixerFish.update( delta );
-  controls.update();
+  if (!controlsLock) controls.update(); // camera keeps shifting after moving to object bug fix
   renderer.render( scene, camera );
   if (grad)
     grad.updateGlobal();
@@ -1007,12 +1008,14 @@ function SetControlsLimit(direction) {
       controls.maxDistance = 100.0
       controls.enableRotate = false
       controls.enabled = true;
+      controlsLock = true;
       break;
     case 2: // aboutme
       controls.minDistance = 200;
       controls.maxDistance = 400;
       controls.enableRotate = false
       controls.enabled = true;
+      controlsLock = true;
       break;
     case 3: // reset
     gsap.to(controls, {
@@ -1032,6 +1035,7 @@ function moveit() { // home
   controls.minDistance = -Infinity;
   controls.maxDistance = Infinity;
   controls.enabled = false;
+  controlsLock = false;
   gsap.to(camera.position, { 
     duration: 2, 
     ease: "power1.inOut",
@@ -1064,7 +1068,7 @@ function moveToProjects(duration) {
     x: -1.27,
     y: 188,
     z: 100, 
-    onComplete: () => SetControlsLimit(1) 
+    onComplete: () => SetControlsLimit(1)
   })
 
   gsap.to(controls.target, { 
