@@ -547,6 +547,24 @@ async function init() {
           child.material = blobMaterial;
         }
       }
+
+      else if (child.name.includes("white_") || child.name.includes("razors")) {
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xffffff
+        });
+        child.material = material;
+      } 
+    }
+
+    else if (child.name.includes("text_")) {
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x000000
+      });
+      child.material = material;
+    } 
+    
+    else {
+      
     }
   
   });
@@ -642,6 +660,7 @@ async function init() {
         child.material = material;
 
         } else {
+
         }
 
     });
