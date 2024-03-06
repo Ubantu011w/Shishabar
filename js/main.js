@@ -47,7 +47,9 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 
+injectSpeedInsights();
 let debugMode = false;
 let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
