@@ -47,9 +47,6 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-import { injectSpeedInsights } from '@vercel/speed-insights';
-
-injectSpeedInsights();
 let debugMode = false;
 let camera, scene, renderer, mixer, mixerFish;
 let pointer, raycaster;
@@ -751,13 +748,14 @@ function onPointerMove( event ) {
  pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 
   raycaster.setFromCamera( pointer, camera );
-
-  const intersects = raycaster.intersectObjects( objects, false );
-  if ( intersects.length > 0) {
-    document.body.style.cursor = 'pointer';
-  } else {
-    document.body.style.cursor = 'default';
+  let intersects;
+  if (screenmode)
+    intersects = raycaster.intersectObjects( helpers, false );
+  else {
+    intersects = raycaster.intersectObjects( objects, false );
   }
+  if ( intersects.length > 0) document.body.style.cursor = 'pointer';
+  else document.body.style.cursor = 'default'
 }
 
 function onPointerDown( event ) {
@@ -777,6 +775,7 @@ function onPointerDown( event ) {
       const intersect = intersects[ 0 ];
       /* intersect.object.material = new THREE.MeshPhongMaterial({emissive: 0xffffff, emissiveIntensity: 1}); */
       screenmode = true;
+
       pointerDisable = true;
       if (intersect.object.name.includes("sign"))
       intersect.object.material = new THREE.MeshStandardMaterial({emissive: 0xffffff, emissiveIntensity: 1});
